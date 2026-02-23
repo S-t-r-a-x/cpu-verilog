@@ -1,4 +1,4 @@
-module deb (
+module debouncer (
     input clk,
     input rst_n,
     input in,

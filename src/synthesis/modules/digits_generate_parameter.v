@@ -11,7 +11,7 @@ module digits_generate_parameter #(
 
     for (i = 0; i < NUM; i = i + 1) begin : name
         wire [3:0] digit = in / 10**i % 10;
-        hex hex_inst (digit, out[(7 * (i + 1) - 1) -: 7]);
+        ssd ssd_inst (digit, out[(7 * (i + 1) - 1) -: 7]);
     end
 
     endgenerate

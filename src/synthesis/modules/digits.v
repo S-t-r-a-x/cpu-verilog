@@ -11,9 +11,9 @@ module digits (
     wire [3:0] hundreds = in / 100 % 10;
     wire [3:0] thousands = in / 1000 % 10;
 
-    hex hex_inst1 (ones, out_ones);
-    hex hex_inst2 (tens, out_tens);
-    hex hex_inst3 (hundreds, out_hundreds);
-    hex hex_inst4 (thousands, out_thousands);
+    ssd ssd_inst1 (ones, out_ones);
+    ssd ssd_inst2 (tens, out_tens);
+    ssd ssd_inst3 (hundreds, out_hundreds);
+    ssd ssd_inst4 (thousands, out_thousands);
 
 endmodule
