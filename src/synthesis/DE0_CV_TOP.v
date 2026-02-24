@@ -71,29 +71,59 @@ module DE0_CV_TOP(input CLOCK2_50,
                   output VGA_HS,
                   output [3:0] VGA_R,
                   output VGA_VS);
+
     // ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
     //  REG/WIRE declarations
     // ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
-    
+    wire [9:0] led_core;
+    wire [27:0] hex_core;
+
+    assign LEDR = led_core;
+    assign {HEX5, HEX4, HEX1, HEX0} = hex_core;
     assign {HEX3, HEX2} = 14'h3FFF;
 
-    // ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
+    // ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == ==  ==  ==  == 
     //  Structural coding
-    // ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  == 
-    
+    // ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==  ==
+    // Unused board peripherals are disabled for this project top.
+    assign DRAM_ADDR = 13'h0000;
+    assign DRAM_BA = 2'b00;
+    assign DRAM_CAS_N = 1'b1;
+    assign DRAM_CKE = 1'b0;
+    assign DRAM_CLK = 1'b0;
+    assign DRAM_CS_N = 1'b1;
+    assign DRAM_LDQM = 1'b1;
+    assign DRAM_RAS_N = 1'b1;
+    assign DRAM_UDQM = 1'b1;
+    assign DRAM_WE_N = 1'b1;
+    assign DRAM_DQ = 16'hZZZZ;
+    assign GPIO_0 = 36'hZZZZZZZZZ;
+    assign GPIO_1 = 36'hZZZZZZZZZ;
+    assign PS2_CLK = 1'bZ;
+    assign PS2_CLK2 = 1'bZ;
+    assign PS2_DAT = 1'bZ;
+    assign PS2_DAT2 = 1'bZ;
+    assign SD_CLK = 1'b0;
+    assign SD_CMD = 1'bZ;
+    assign SD_DATA = 4'bZZZZ;
+    assign VGA_B = 4'h0;
+    assign VGA_G = 4'h0;
+    assign VGA_HS = 1'b0;
+    assign VGA_R = 4'h0;
+    assign VGA_VS = 1'b0;
+
     top #(
-      .DIVISOR(50_000_000),
-      .FILE_NAME("mem_init.mif"),
-      .ADDR_WIDTH(6),
-      .DATA_WIDTH(16)
+        .DIVISOR(50_000_000),
+        .FILE_NAME("mem_init.mif"),
+        .ADDR_WIDTH(6),
+        .DATA_WIDTH(16)
     ) top_inst (
-      .clk(CLOCK_50),
-      .kbd({PS2_DAT, PS2_CLK}),
-      .btn(~KEY[2:0]),
-      .sw(SW[9:0]),
-      .mnt({VGA_HS, VGA_VS, VGA_R, VGA_G, VGA_B}),
-      .led(LEDR[9:0]),
-      .hex({HEX5, HEX4, HEX1, HEX0})
+        .clk(CLOCK_50),
+        .rst_n(RESET_N),
+        .btn(~KEY[2:0]),
+        .sw(SW[8:0]),
+        .led(led_core),
+        .hex(hex_core)
     );
 
 endmodule

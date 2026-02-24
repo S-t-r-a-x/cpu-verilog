@@ -35,7 +35,7 @@ SYNTH_CYCLONE5_DEFAULT_ASSIGNMENT_FILE = ./config/boards/cyclone5/assignment_def
 SYNTH_CYCLONE5_CONSTRAINTS_FILE = ./config/boards/cyclone5/DE0_CV_TOP.sdc
 # either empty variable or path ending with \\ i.e. double backslash
 # C:\\"Program Files"\\altera\\13.1\\quartus\\bin\\ 
-SYNTH_TOOL_EXE_DIR_PATH = C:\\"Program Files"\\altera\\13.1\\quartus\\bin\\
+SYNTH_TOOL_EXE_DIR_PATH = /mnt/c/altera/13.1/quartus/bin/
 
 LIST_FILE_ICARUS = ./config/list-icarus-verilog.lst
 LIST_FILE_SIMUL = ./config/list-src-files-simul.lst
@@ -210,13 +210,13 @@ simul_clean:
 
 SYNTH_TAG = ***[SYNTHESIS]***
 
-SYNTH_TOOL_SH = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_sh
-SYNTH_TOOL_MAP = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_map
-SYNTH_TOOL_FIT = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_fit
-SYNTH_TOOL_ASM = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_asm
-SYNTH_TOOL_STA = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_sta
-SYNTH_TOOL_CDB = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_cdb
-SYNTH_TOOL_PGM = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_pgm
+SYNTH_TOOL_SH = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_sh.exe
+SYNTH_TOOL_MAP = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_map.exe
+SYNTH_TOOL_FIT = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_fit.exe
+SYNTH_TOOL_ASM = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_asm.exe
+SYNTH_TOOL_STA = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_sta.exe
+SYNTH_TOOL_CDB = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_cdb.exe
+SYNTH_TOOL_PGM = $(SYNTH_TOOL_EXE_DIR_PATH)quartus_pgm.exe
 
 SYNTH_SRC_FILE_LIST = $(call create_src_file_list,$(LIST_FILE_SYNTH))
 # $(info $(SYNTH_SRC_FILE_LIST))

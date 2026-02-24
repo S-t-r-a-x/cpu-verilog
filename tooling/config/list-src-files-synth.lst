@@ -2,11 +2,18 @@ src/synthesis/modules/m41.v
 
 src/synthesis/modules/gcd4.v
 
-src/synthesis/modules/deb.v
+src/synthesis/modules/debouncer.v
 src/synthesis/modules/red.v
 src/synthesis/modules/reg8.v
 
-src/synthesis/modules/hex.v
+src/synthesis/modules/bcd.v
+src/synthesis/modules/clk_div.v
+src/synthesis/modules/alu.v
+src/synthesis/modules/cpu.v
+src/synthesis/modules/memory.v
+src/synthesis/modules/register.v
+
+src/synthesis/modules/ssd.v
 src/synthesis/modules/reg4.v
 
 src/synthesis/modules/regN.v
@@ -17,5 +24,6 @@ src/synthesis/modules/digits.v
 src/synthesis/modules/digits_generate.v
 src/synthesis/modules/digits_generate_parameter.v
 src/synthesis/modules/timer.v
+src/synthesis/modules/top.v
 
 src/synthesis/DE0_TOP.v

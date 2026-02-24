@@ -3,3 +3,15 @@
 work/
 xpack/
 *.pdf
+incremental_db/
+db/
+*.rpt
+*.smsg
+*.qpf
+*.qsf
+*.summary
+*.chg
+*.eqn
+*.jdi
+*.pin
+*.sof

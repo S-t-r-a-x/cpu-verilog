@@ -184,75 +184,72 @@ module DE0_TOP (CLOCK_50,
     output [1:0]  GPIO1_CLKOUT; //  GPIO Connection 1 Clock Out Bus
     inout  [31:0] GPIO1_D;      //  GPIO Connection 1 Data Bus
 
-/*
-*/
-    // Zadatak 1
-    m41 m41_inst (SW[0], SW[1], SW[2], SW[3], ~BUTTON[1:0], LEDG[0]);
-/*
-    // Zadatak 2
-    gcd4 gcd4_inst (CLOCK_50, SW[9], SW[7:4], SW[3:0], LEDG[3:0]);
+    wire [9:0] led_core;
+    wire [27:0] hex_core;
 
-    // Zadatak 3
-    wire SW8_deb;
-    wire SW8_red;
+    assign LEDG = led_core;
+    assign {HEX3_D, HEX2_D, HEX1_D, HEX0_D} = hex_core;
+    assign {HEX3_DP, HEX2_DP, HEX1_DP, HEX0_DP} = 4'hF;
 
-    deb deb_inst (CLOCK_50, SW[9], SW[8], SW8_deb);
-    red red_inst (CLOCK_50, SW[9], SW8_deb, SW8_red);
-    reg8 reg8_inst (CLOCK_50, SW[9], ~BUTTON[0], SW8_red, SW[7:0], LEDG[7:0]);
+    // Unused board peripherals are disabled for this project top.
+    assign UART_TXD = 1'b1;
+    assign UART_CTS = 1'b1;
+    assign DRAM_ADDR = 13'h0000;
+    assign DRAM_LDQM = 1'b1;
+    assign DRAM_UDQM = 1'b1;
+    assign DRAM_WE_N = 1'b1;
+    assign DRAM_CAS_N = 1'b1;
+    assign DRAM_RAS_N = 1'b1;
+    assign DRAM_CS_N = 1'b1;
+    assign DRAM_BA_0 = 1'b0;
+    assign DRAM_BA_1 = 1'b0;
+    assign DRAM_CLK = 1'b0;
+    assign DRAM_CKE = 1'b0;
+    assign DRAM_DQ = 16'hZZZZ;
+    assign FL_DQ = 15'hZZZZ;
+    assign FL_DQ15_AM1 = 1'bZ;
+    assign FL_ADDR = 22'h000000;
+    assign FL_WE_N = 1'b1;
+    assign FL_RST_N = 1'b1;
+    assign FL_OE_N = 1'b1;
+    assign FL_CE_N = 1'b1;
+    assign FL_WP_N = 1'b1;
+    assign FL_BYTE_N = 1'b1;
+    assign LCD_BLON = 1'b0;
+    assign LCD_RW = 1'b0;
+    assign LCD_EN = 1'b0;
+    assign LCD_RS = 1'b0;
+    assign LCD_DATA = 8'hZZ;
+    assign SD_DAT0 = 1'bZ;
+    assign SD_DAT3 = 1'bZ;
+    assign SD_CMD = 1'bZ;
+    assign SD_CLK = 1'b0;
+    assign VGA_HS = 1'b0;
+    assign VGA_VS = 1'b0;
+    assign VGA_R = 4'h0;
+    assign VGA_G = 4'h0;
+    assign VGA_B = 4'h0;
+    assign GPIO0_CLKOUT = 2'b00;
+    assign GPIO0_D = 32'hZZZZZZZZ;
+    assign GPIO1_CLKOUT = 2'b00;
+    assign GPIO1_D = 32'hZZZZZZZZ;
+    assign PS2_KBDAT = 1'bZ;
+    assign PS2_KBCLK = 1'bZ;
+    assign PS2_MSDAT = 1'bZ;
+    assign PS2_MSCLK = 1'bZ;
 
-    // Zadatak 4
-    wire BUTTON1_red;
-    wire [3:0] out_reg4;
-    wire [6:0] out_hex;
-
-    assign {HEX0_DP, HEX0_D} = {1'b1, out_hex};
-    assign {HEX3_DP, HEX3_D, HEX2_DP, HEX2_D, HEX1_DP, HEX1_D} = 24'hFFFFFF;
-
-    red red_inst (CLOCK_50, SW[9], ~BUTTON[1], BUTTON1_red);
-    reg4 reg4_inst (CLOCK_50, SW[9], ~BUTTON[0], BUTTON1_red, SW[3:0], out_reg4);
-    hex hex_inst (out_reg4, out_hex);
-
-    // Zadatak 5
-    wire SW8_deb;
-    wire SW8_red;
-
-    deb deb_inst (CLOCK_50, SW[9], SW[8], SW8_deb);
-    red red_inst (CLOCK_50, SW[9], SW8_deb, SW8_red);
-    regN #(.WIDTH(3)) regN_inst (CLOCK_50, SW[9], ~BUTTON[0], SW8_red, SW[2:0], LEDG[2:0]);
-
-    // Zadatak 6
-    wire SW8_deb;
-    wire BUTTON0_red;
-
-    deb deb_inst (CLOCK_50, SW[9], SW[8], SW8_deb);
-    red red_inst (CLOCK_50, SW[9], ~BUTTON[0], BUTTON0_red);
-    regN_fsm #(.WIDTH(5)) regN_fsm_inst (CLOCK_50, SW[9], SW8_deb, BUTTON0_red, SW[4:0], LEDG[4:0]);
-
-    // Zadatak 7
-    wire [9:0] out_timer;
-    assign LEDG = out_timer;
-    assign {HEX0_DP, HEX1_DP, HEX2_DP, HEX3_DP} = 4'hF;
-
-    timer timer_inst (CLOCK_50, SW[9], out_timer);
-    digits digits_inst (out_timer, HEX0_D, HEX1_D, HEX2_D, HEX3_D);
-
-    // Zadatak 7: GENERATE
-    wire [9:0] out_timer;
-    assign LEDG = out_timer;
-    assign {HEX0_DP, HEX1_DP, HEX2_DP, HEX3_DP} = 4'hF;
-
-    timer timer_inst (CLOCK_50, SW[9], out_timer);
-    digits_generate digits_inst (out_timer, {HEX3_D, HEX2_D, HEX1_D, HEX0_D});
-
-    // Zadatak 7: GENERATE + PARAMETER
-    wire [9:0] out_timer;
-    assign LEDG = out_timer;
-    assign {HEX0_DP, HEX1_DP, HEX2_DP, HEX3_DP} = 4'hF;
-    assign {HEX3_D, HEX2_D} = 14'h3FFF;
-
-    timer timer_inst (CLOCK_50, SW[9], out_timer);
-    digits_generate_parameter #(2) digits_inst (out_timer, {HEX1_D, HEX0_D});
-
-*/
+    top #(
+        .DIVISOR(50_000_000),
+        .FILE_NAME("mem_init.mif"),
+        .ADDR_WIDTH(6),
+        .DATA_WIDTH(16)
+    ) top_inst (
+        .clk(CLOCK_50),
+        .rst_n(SW[9]),
+        .btn(~BUTTON[2:0]),
+        .sw(SW[8:0]),
+        .led(led_core),
+        .hex(hex_core)
+    );
 
 endmodule
