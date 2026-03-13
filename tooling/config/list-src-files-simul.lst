@@ -1,0 +1,4 @@
+src/synthesis/modules/register.v
+src/synthesis/modules/alu.v
+src/synthesis/modules/cpu.v
+src/simulation/cpu_tb.v

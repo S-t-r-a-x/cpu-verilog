@@ -2,7 +2,7 @@
 # cd tooling
 # ./xpack/bin/make
 
-SIMUL_TOP_LEVEL_MODULE = top_display
+SIMUL_TOP_LEVEL_MODULE = cpu_tb
 SIMUL_LIB = work
 # 1 (yes) -> override timescale
 # 0 (no)  -> do NOT override timescale
@@ -50,7 +50,7 @@ help:
 	@echo "TARGETS:"
 	@echo "       help            - Show the help (this text)."
 	@echo
-	@echo "       simul_all       - Compile and simulate the design (Shell-based)."
+	@echo "       simul_all       - Compile and simulate the design (Shell-based). CPU testbench if list-src-files-simul.lst is set for it."
 	@echo "       simul_lib       - Create the work library."
 	@echo "       simul_cmp       - Compile the design."
 	@echo "       simul_run       - Start default simulation (shell-based)."
