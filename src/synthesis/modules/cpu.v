@@ -264,6 +264,8 @@ localparam DECODE_Z = 5'b01011;
 localparam DECODE_Z_INDIRECT_1 = 5'b01100;
 localparam DECODE_Z_INDIRECT_2 = 5'b01101;
 localparam EXECUTE = 5'b01110;
+localparam FETCH_CONST1 = 5'b01111;
+localparam FETCH_CONST2 = 5'b10000;
 localparam HALT = 5'b11111;
 
 // OPCODES
@@ -272,6 +274,8 @@ localparam ADD = 4'b0001;
 localparam SUB = 4'b0010;
 localparam MUL = 4'b0011;
 localparam DIV = 4'b0100;
+localparam BEQ = 4'b0101;   // branch if Y == Z to address in X
+localparam ADDC = 4'b0110;  // mem[X] = Y + constant (2-word instruction)
 localparam IN = 4'b0111;
 localparam OUT = 4'b1000;
 localparam STOP = 4'b1111;
@@ -454,10 +458,16 @@ always @(*) begin
                     we = 1'b0;
                     state_next = DECODE_Z;
                 end */
-                // HAVE TO DECODE Z ALWAYS BECAUSE MOV CHECKS IF Z IS 0, SO EVERY 2 X Y INSTRUCTIONS NEEDS A Z
-                addr = {3'b000, out_ir[2:0]};
-                we = 1'b0;
-                state_next = DECODE_Z;
+                if (out_ir[15:12] == ADDC) begin
+                    addr = pc;
+                    we = 1'b0;
+                    state_next = FETCH_CONST1;
+                end
+                else begin
+                    addr = {3'b000, out_ir[2:0]};
+                    we = 1'b0;
+                    state_next = DECODE_Z;
+                end
             end
         end
 
@@ -485,10 +495,16 @@ always @(*) begin
                 we = 1'b0;
                 state_next = DECODE_Z;
             end */
-            // HAVE TO DECODE Z ALWAYS BECAUSE MOV CHECKS IF Z IS 0, SO EVERY 2 X Y INSTRUCTIONS NEEDS A Z
-            addr = {3'b000, out_ir[2:0]};
-            we = 1'b0;
-            state_next = DECODE_Z;
+            if (out_ir[15:12] == ADDC) begin
+                addr = pc;
+                we = 1'b0;
+                state_next = FETCH_CONST1;
+            end
+            else begin
+                addr = {3'b000, out_ir[2:0]};
+                we = 1'b0;
+                state_next = DECODE_Z;
+            end
         end
 
         // ======================== DECODE Z ===========================
@@ -528,6 +544,21 @@ always @(*) begin
             state_next = EXECUTE;
         end
 
+        // ======================== FETCH CONSTANT (2-word instructions) ===
+        
+        FETCH_CONST1: begin
+            addr = pc;
+            we = 1'b0;
+            state_next = FETCH_CONST2;
+        end
+
+        FETCH_CONST2: begin
+            in_z = mem;
+            ld_z = 1'b1;
+            inc_pc = 1'b1;
+            state_next = EXECUTE;
+        end
+
         // ======================== EXECUTE ===========================
 
         EXECUTE: begin
@@ -544,6 +575,20 @@ always @(*) begin
                 ADD, SUB, MUL, DIV: begin
                     // DEDUCT 1 FROM OPCODE TO GET ALU OPERATION
                     alu_oc = out_ir[14:12] - 3'b001;
+                    addr = out_x_addr;
+                    data = alu_out;
+                    we = 1'b1;
+                    state_next = FETCH1;
+                end
+                BEQ: begin
+                    if (out_y == out_z) begin
+                        in_pc = out_x[ADDR_WIDTH-1:0];
+                        ld_pc = 1'b1;
+                    end
+                    state_next = FETCH1;
+                end
+                ADDC: begin
+                    alu_oc = ALU_ADD;
                     addr = out_x_addr;
                     data = alu_out;
                     we = 1'b1;
