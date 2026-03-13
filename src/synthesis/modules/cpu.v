@@ -125,114 +125,8 @@ register #(.DATA_WIDTH(DATA_WIDTH)) acc (
     .out(out_acc)
 );
 
-reg ld_x_addr, cl_x_addr;
-reg [ADDR_WIDTH-1:0] in_x_addr;
-wire [ADDR_WIDTH-1:0] out_x_addr; 
-register #(.DATA_WIDTH(ADDR_WIDTH)) X_addr_reg (
-    .clk(clk),
-    .rst_n(rst_n),
-    .ld(ld_x_addr),
-    .cl(cl_x_addr),
-    .in(in_x_addr),
-    .inc(1'b0),
-    .dec(1'b0),
-    .sr(1'b0),
-    .ir(1'b0),
-    .sl(1'b0),
-    .il(1'b0),
-    .out(out_x_addr)
-);
-
-reg ld_y_addr, cl_y_addr;
-reg [ADDR_WIDTH-1:0] in_y_addr;
-wire [ADDR_WIDTH-1:0] out_y_addr; 
-register #(.DATA_WIDTH(ADDR_WIDTH)) Y_addr_reg (
-    .clk(clk),
-    .rst_n(rst_n),
-    .ld(ld_y_addr),
-    .cl(cl_y_addr),
-    .in(in_y_addr),
-    .inc(1'b0),
-    .dec(1'b0),
-    .sr(1'b0),
-    .ir(1'b0),
-    .sl(1'b0),
-    .il(1'b0),
-    .out(out_y_addr)
-);
-
-reg ld_z_addr, cl_z_addr;
-reg [ADDR_WIDTH-1:0] in_z_addr;
-wire [ADDR_WIDTH-1:0] out_z_addr; 
-register #(.DATA_WIDTH(ADDR_WIDTH)) Z_addr_reg (
-    .clk(clk),
-    .rst_n(rst_n),
-    .ld(ld_z_addr),
-    .cl(cl_z_addr),
-    .in(in_z_addr),
-    .inc(1'b0),
-    .dec(1'b0),
-    .sr(1'b0),
-    .ir(1'b0),
-    .sl(1'b0),
-    .il(1'b0),
-    .out(out_z_addr)
-);
-
-reg ld_x, cl_x;
-reg [DATA_WIDTH-1:0] in_x;
-wire [DATA_WIDTH-1:0] out_x; 
-register #(.DATA_WIDTH(DATA_WIDTH)) X_reg (
-    .clk(clk),
-    .rst_n(rst_n),
-    .ld(ld_x),
-    .cl(cl_x),
-    .in(in_x),
-    .inc(1'b0),
-    .dec(1'b0),
-    .sr(1'b0),
-    .ir(1'b0),
-    .sl(1'b0),
-    .il(1'b0),
-    .out(out_x)
-);
-
-reg ld_y, cl_y;
-reg [DATA_WIDTH-1:0] in_y;
-wire [DATA_WIDTH-1:0] out_y; 
-register #(.DATA_WIDTH(DATA_WIDTH)) Y_reg (
-    .clk(clk),
-    .rst_n(rst_n),
-    .ld(ld_y),
-    .cl(cl_y),
-    .in(in_y),
-    .inc(1'b0),
-    .dec(1'b0),
-    .sr(1'b0),
-    .ir(1'b0),
-    .sl(1'b0),
-    .il(1'b0),
-    .out(out_y)
-);
-
-
-reg ld_z, cl_z;
-reg [DATA_WIDTH-1:0] in_z;
-wire [DATA_WIDTH-1:0] out_z; 
-register #(.DATA_WIDTH(DATA_WIDTH)) Z_reg (
-    .clk(clk),
-    .rst_n(rst_n),
-    .ld(ld_z),
-    .cl(cl_z),
-    .in(in_z),
-    .inc(1'b0),
-    .dec(1'b0),
-    .sr(1'b0),
-    .ir(1'b0),
-    .sl(1'b0),
-    .il(1'b0),
-    .out(out_z)
-);
+reg [15:0] x_reg, y_reg, z_reg, x_next, y_next, z_next;
+reg [5:0] xAddr_reg, yAddr_reg, zAddr_reg, xAddr_next, yAddr_next, zAddr_next;
 
 // ALU INSTANTIATION
 reg [2:0] alu_oc;
@@ -240,8 +134,8 @@ reg [2:0] alu_oc;
 wire [DATA_WIDTH-1:0] alu_out;
 alu #(.DATA_WIDTH(DATA_WIDTH)) alu_unit (
     .oc(alu_oc),
-    .a(out_y),
-    .b(out_z),
+    .a(y_reg),
+    .b(z_reg),
     .f(alu_out)
 );
 
@@ -297,10 +191,22 @@ always @(posedge clk, negedge rst_n) begin
     if(!rst_n) begin
         state_reg <= INIT;
         out_reg <= {DATA_WIDTH{1'b0}};
+        x_reg <= 16'h0000; 
+        y_reg <= 16'h0000; 
+        z_reg <= 16'h0000; 
+        xAddr_reg <= 6'b000000;
+        yAddr_reg <= 6'b000000;
+        zAddr_reg <= 6'b000000;
     end
     else begin 
         state_reg <= state_next;
         out_reg <= out_next;
+        x_reg <= x_next; 
+        y_reg <= y_next; 
+        z_reg <= z_next; 
+        xAddr_reg <= xAddr_next;
+        yAddr_reg <= yAddr_next;
+        zAddr_reg <= zAddr_next;
     end
 end
 
@@ -311,6 +217,12 @@ always @(*) begin
     // Default assignments to prevent latches and reset control wires!
     state_next = state_reg;
     out_next = out_reg;
+    x_next = x_reg;
+    y_next = y_reg;
+    z_next = z_reg;
+    xAddr_next = xAddr_reg;
+    yAddr_next = yAddr_reg;
+    zAddr_next = zAddr_reg;
     we = 1'b0;
     addr = {ADDR_WIDTH{1'b0}};
     data = {DATA_WIDTH{1'b0}};
@@ -323,12 +235,6 @@ always @(*) begin
     ld_mar = 1'b0; inc_mar = 1'b0; in_mar = {ADDR_WIDTH{1'b0}};
     ld_mdr = 1'b0; in_mdr = {DATA_WIDTH{1'b0}};
     ld_acc = 1'b0; in_acc = {DATA_WIDTH{1'b0}};
-    ld_x = 1'b0; cl_x = 1'b0; in_x = {DATA_WIDTH{1'b0}};
-    ld_y = 1'b0; cl_y = 1'b0; in_y = {DATA_WIDTH{1'b0}};
-    ld_z = 1'b0; cl_z = 1'b0; in_z = {DATA_WIDTH{1'b0}};
-    ld_x_addr = 1'b0; cl_x_addr = 1'b0; in_x_addr = {ADDR_WIDTH{1'b0}};
-    ld_y_addr = 1'b0; cl_y_addr = 1'b0; in_y_addr = {ADDR_WIDTH{1'b0}};
-    ld_z_addr = 1'b0; cl_z_addr = 1'b0; in_z_addr = {ADDR_WIDTH{1'b0}};
 
     case (state_reg)
         HALT: begin
@@ -385,10 +291,8 @@ always @(*) begin
             end
             else begin
                 // Direct mode
-                in_x_addr = out_ir[10:8];
-                ld_x_addr = 1'b1;
-                in_x = mem;
-                ld_x = 1'b1;
+                xAddr_next = {3'b000, out_ir[10:8]};
+                x_next = mem;
                 // CHECK IF INSTRUCTION ONLY REQUIRES X, OR WE NEED TO DECODE Y (AND Z)
                 if (out_ir[15:12] == IN || out_ir[15:12] == OUT) begin
                     state_next = EXECUTE;
@@ -405,16 +309,14 @@ always @(*) begin
         DECODE_X_INDIRECT_1: begin
             addr = out_mar;
             // Remember the address
-            in_x_addr = out_mar;
-            ld_x_addr = 1'b1;
+            xAddr_next = out_mar;
             we = 1'b0;
             state_next = DECODE_X_INDIRECT_2;
         end
 
         DECODE_X_INDIRECT_2: begin
             // Get the value of X from memory
-            in_x = mem;
-            ld_x = 1'b1;
+            x_next = mem;
             we = 1'b0;
             // CHECK IF INSTRUCTION ONLY REQUIRES X, OR WE NEED TO DECODE Y (AND Z)
             if (out_ir[15:12] == IN || out_ir[15:12] == OUT) begin
@@ -440,10 +342,8 @@ always @(*) begin
             end
             else begin
                 // Direct mode
-                in_y_addr = out_ir[6:4];
-                ld_y_addr = 1'b1;
-                in_y = mem;
-                ld_y = 1'b1;
+                yAddr_next = {3'b000, out_ir[6:4]};
+                y_next = mem;
                 /* // CHECK IF INSTRUCTION ONLY NEEDS X AND Y, OR WE NEED TO DECODE Z too
                 if (out_ir[15:12] == MOV) begin
                     state_next = EXECUTE;
@@ -464,16 +364,14 @@ always @(*) begin
         DECODE_Y_INDIRECT_1: begin
             addr = out_mar;
             // Remember the address
-            in_y_addr = out_mar;
-            ld_y_addr = 1'b1;
+            yAddr_next = out_mar;
             we = 1'b0;
             state_next = DECODE_Y_INDIRECT_2;
         end
 
         DECODE_Y_INDIRECT_2: begin
             // Get the value of Y from memory
-            in_y = mem;
-            ld_y = 1'b1;
+            y_next = mem;
             we = 1'b0;
             // CHECK IF INSTRUCTION ONLY NEEDS X AND Y, OR WE NEED TO DECODE Z TOO
             /* if (out_ir[15:12] == MOV) begin
@@ -503,10 +401,8 @@ always @(*) begin
             end
             else begin
                 // Direct mode
-                in_z_addr = out_ir[2:0];
-                ld_z_addr = 1'b1;
-                in_z = mem;
-                ld_z = 1'b1;
+                zAddr_next = {3'b000, out_ir[2:0]};
+                z_next = mem;
                 state_next = EXECUTE;
             end
         end
@@ -514,16 +410,14 @@ always @(*) begin
         DECODE_Z_INDIRECT_1: begin
             addr = out_mar;
             // Remember the address
-            in_z_addr = out_mar;
-            ld_z_addr = 1'b1;
+            zAddr_next = out_mar;
             we = 1'b0;
             state_next = DECODE_Z_INDIRECT_2;
         end
 
         DECODE_Z_INDIRECT_2: begin
             // Get the value of Z from memory
-            in_z = mem;
-            ld_z = 1'b1;
+            z_next = mem;
             we = 1'b0;
             state_next = EXECUTE;
         end
@@ -534,40 +428,40 @@ always @(*) begin
             // Logic to perform the operation goes here
             case (out_ir[15:12])
                 MOV: begin
-                    if(out_z == 0) begin
-                        addr = out_x_addr;
+                    if(z_reg == 0) begin
+                        addr = xAddr_reg;
                         we = 1'b1;
-                        data = out_y;
+                        data = y_reg;
                     end
                     state_next = FETCH1;
                 end
                 ADD, SUB, MUL, DIV: begin
                     // DEDUCT 1 FROM OPCODE TO GET ALU OPERATION
                     alu_oc = out_ir[14:12] - 3'b001;
-                    addr = out_x_addr;
+                    addr = xAddr_reg;
                     data = alu_out;
                     we = 1'b1;
                     state_next = FETCH1;
                 end
                 IN: begin
-                    addr = out_x_addr;
+                    addr = xAddr_reg;
                     we = 1'b1;
                     data = in;
                     state_next = FETCH1;
                 end
                 OUT: begin
-                    out_next = out_x;
+                    out_next = x_reg;
                     state_next = FETCH1;
                 end
                 STOP: begin
                     if(out_ir[11:8] != 0) begin
-                        out_next = out_x;
+                        out_next = x_reg;
                     end
                     else if (out_ir[7:4] != 0) begin
-                        out_next = out_y;
+                        out_next = y_reg;
                     end
                     else if (out_ir[3:0] != 0) begin
-                        out_next = out_z;
+                        out_next = z_reg;
                     end
                     state_next = HALT;
                 end

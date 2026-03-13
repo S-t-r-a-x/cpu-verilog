@@ -102,6 +102,11 @@ module cpu_tb;
         .sp(sp)
     );
 
+    // Print PC, SP, and output whenever PC changes (after reset)
+    always @(pc)
+        if (rst_n)
+            $display("[trace] PC=%0d SP=%0d out=%0d", pc, sp, cpu_out);
+
     initial begin
         rst_n = 0;
         #(2*CLK_PERIOD);
