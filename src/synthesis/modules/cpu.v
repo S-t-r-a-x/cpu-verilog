@@ -71,7 +71,7 @@ register #(.DATA_WIDTH(32)) ir (
     .out(out_ir)
 );
 
-reg ld_mar, inc_mar, dec_mar;
+reg ld_mar, inc_mar;
 reg [ADDR_WIDTH-1:0] in_mar;
 wire [ADDR_WIDTH-1:0] out_mar; 
 register #(.DATA_WIDTH(ADDR_WIDTH)) mar (
@@ -80,7 +80,7 @@ register #(.DATA_WIDTH(ADDR_WIDTH)) mar (
     .cl(1'b0),
     .ld(ld_mar),
     .inc(inc_mar),
-    .dec(dec_mar),
+    .dec(1'b0),
     .sr(1'b0),
     .ir(1'b0),
     .sl(1'b0),
@@ -89,7 +89,7 @@ register #(.DATA_WIDTH(ADDR_WIDTH)) mar (
     .out(out_mar)
 );
 
-reg ld_mdr, inc_mdr, dec_mdr;
+reg ld_mdr, inc_mdr;
 reg [DATA_WIDTH-1:0] in_mdr;
 wire [DATA_WIDTH-1:0] out_mdr; 
 register #(.DATA_WIDTH(DATA_WIDTH)) mdr (
@@ -98,7 +98,7 @@ register #(.DATA_WIDTH(DATA_WIDTH)) mdr (
     .cl(1'b0),
     .ld(ld_mdr),
     .inc(inc_mdr),
-    .dec(dec_mdr),
+    .dec(1'b0),
     .sr(1'b0),
     .ir(1'b0),
     .sl(1'b0),
@@ -159,9 +159,15 @@ localparam DECODE_Z = 5'b01011;
 localparam DECODE_Z_INDIRECT_1 = 5'b01100;
 localparam DECODE_Z_INDIRECT_2 = 5'b01101;
 localparam EXECUTE = 5'b01110;
+// 2 WORD FETCHES
 localparam FETCH3 = 5'b01111;
 localparam FETCH4 = 5'b10000;
 
+localparam JSR_JMP = 5'b10001;
+localparam RTS_RET = 5'b10010;
+
+localparam MOV_ARRAY_GET_Y = 5'b10011;
+localparam MOV_ARRAY_SET_X = 5'b10100;
 
 localparam STOP_Y = 5'b11101;
 localparam STOP_Z = 5'b11110;
@@ -177,7 +183,8 @@ localparam IN = 4'b0111;
 localparam OUT = 4'b1000;
 localparam STOP = 4'b1111;
 // TEMPLATE ZA MOD
-localparam TWOADDRINST = 4'b1001;
+localparam JSR = 4'b1101;
+localparam RTS = 4'b1110;
 
 // ALU OPERATIONS
 localparam ALU_ADD = 3'b000;
@@ -241,8 +248,8 @@ always @(*) begin
     ld_pc = 1'b0; inc_pc = 1'b0; in_pc = {ADDR_WIDTH{1'b0}};
     ld_sp = 1'b0; inc_sp = 1'b0; dec_sp = 1'b0; in_sp = {ADDR_WIDTH{1'b0}};
     ld_ir = 1'b0; in_ir = 32'b0;
-    ld_mar = 1'b0; inc_mar = 1'b0; dec_mar = 1'b0; in_mar = {ADDR_WIDTH{1'b0}};
-    ld_mdr = 1'b0; inc_mdr = 1'b0; dec_mdr = 1'b0; in_mdr = {DATA_WIDTH{1'b0}};
+    ld_mar = 1'b0; inc_mar = 1'b0; in_mar = {ADDR_WIDTH{1'b0}};
+    ld_mdr = 1'b0; inc_mdr = 1'b0; in_mdr = {DATA_WIDTH{1'b0}};
     ld_acc = 1'b0; in_acc = {DATA_WIDTH{1'b0}};
 
     case (state_reg)
@@ -257,7 +264,7 @@ always @(*) begin
             // Setup Stack Pointer (starts at last location: 63)
             in_sp = 6'd63; 
             ld_sp = 1'b1;
-
+    
             state_next = FETCH1;
         end
         
@@ -279,9 +286,12 @@ always @(*) begin
             inc_pc = 1'b1; 
             
             // ir isnt loaded in this cycle, so we have to check from mem
-            if(mem[15:12] == TWOADDRINST) begin
+            if(mem[15:12] == JSR) begin
                 // MOV OF array
                 state_next = FETCH3;
+            end
+            else if (mem[15:12] == RTS) begin
+                state_next = EXECUTE;
             end
             else begin
                 // 3. Move to DECODE to actually look at what we fetched
@@ -306,7 +316,12 @@ always @(*) begin
             inc_pc = 1'b1; 
             
             // 3. Move to DECODE to actually look at what we fetched
-            state_next = DECODE;
+            if(out_ir[15:12] == JSR) begin
+                state_next = EXECUTE;
+            end
+            else begin
+                state_next = DECODE;
+            end
         end
 
         DECODE: begin
@@ -460,8 +475,18 @@ always @(*) begin
                         addr = xAddr_reg;
                         we = 1'b1;
                         data = y_reg;
+                        state_next = FETCH1;
                     end
-                    state_next = FETCH1;
+                    else if (out_ir[3] == 1'b0 && out_ir[2:0] != 3'b000) begin
+                        // USE MDR AS COUNTER - prepare it
+                        in_mdr = 16'b0;
+                        ld_mdr = 1'b1;
+                        // set memory address to the first yAddr
+                        state_next = MOV_ARRAY_GET_Y;
+                    end
+                    else begin
+                        state_next = FETCH1;
+                    end
                 end
                 ADD, SUB, MUL, DIV: begin
                     // DEDUCT 1 FROM OPCODE TO GET ALU OPERATION
@@ -501,11 +526,67 @@ always @(*) begin
                         state_next = HALT;
                     end
                 end
+                JSR: begin
+                    // WRITE OLD PC TO MEM
+                    addr = out_sp;
+                    data = {{(DATA_WIDTH - ADDR_WIDTH){1'b0}}, out_pc};
+                    we = 1'b1;
+                    // update SP
+                    dec_sp = 1'b1;
+                    // SET NEW PC FROM 2nd INSTR WORD
+                    in_pc = out_ir[21:16];
+                    ld_pc = 1'b1;
+                    state_next = FETCH1;
+                end
+                RTS: begin
+                    inc_sp = 1'b1;
+                    addr = out_sp + 6'b000001;
+                    state_next = RTS_RET;
+                end
+                JSR: begin
+                    // WRITE OLD PC TO MEM
+                    addr = out_sp;
+                    data = {{(DATA_WIDTH - ADDR_WIDTH){1'b0}}, out_pc};
+                    we = 1'b1;
+                    // update SP
+                    dec_sp = 1'b1;
+                    // SET NEW PC FROM 2nd INSTR WORD
+                    in_pc = out_ir[21:16];
+                    ld_pc = 1'b1;
+                    state_next = FETCH1;
+                end
+                RTS: begin
+                    inc_sp = 1'b1;
+                    addr = out_sp + 6'b000001;
+                    state_next = RTS_RET;
+                end
                 default: begin
                     $display("[%0t] ERROR: Unknown opcode %b at PC=%0d. Halting.", $time, out_ir[15:12], pc);
                     state_next = HALT;
                 end
             endcase
+        end
+        RTS_RET: begin
+            in_pc = mem[ADDR_WIDTH-1:0];
+            ld_pc = 1'b1;
+            state_next = FETCH1;
+        end
+        MOV_ARRAY_GET_Y: begin
+            if (out_mdr[2:0] == out_ir[2:0]) begin
+                // LOOP END
+                state_next = FETCH1;
+            end
+            else begin
+                addr = yAddr_reg + {3'b000, out_mdr[2:0]};
+                state_next = MOV_ARRAY_SET_X;
+            end
+        end
+        MOV_ARRAY_SET_X: begin
+            addr = xAddr_reg + {3'b000, out_mdr[2:0]};
+            data = mem;
+            we = 1'b1;
+            inc_mdr = 1'b1;
+            state_next = MOV_ARRAY_GET_Y;
         end
         STOP_Y: begin
             out_next = y_reg;

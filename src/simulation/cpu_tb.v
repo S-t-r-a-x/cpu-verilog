@@ -22,20 +22,23 @@ module memory_sim #(
     initial begin
         for (i = 0; i < 2**ADDR_WIDTH; i = i + 1)
             mem[i] = {DATA_WIDTH{1'b0}};
-        // Program: Full Instruction Set Test (PC starts at 8)
+        // Program (JSR and RTS test): PC starts at 8
         mem[0] = 16'h0000; mem[1] = 16'h0000; mem[2] = 16'h0000; mem[3] = 16'h0000;
         mem[4] = 16'h0000; mem[5] = 16'h0000; mem[6] = 16'h0000; mem[7] = 16'h0000;
-        
-        mem[8]  = 16'h7100;  // IN R1        (R1 = 10 from sw_in)
-        mem[9]  = 16'h7200;  // IN R2        (R2 = 5 from sw_in)
-        mem[10] = 16'h1312;  // ADD R3,R1,R2 (R3 = 10 + 5 = 15)
-        mem[11] = 16'h2432;  // SUB R4,R3,R2 (R4 = 15 - 5 = 10)
-        mem[12] = 16'h3542;  // MUL R5,R4,R2 (R5 = 10 * 5 = 50)
-        mem[13] = 16'h4652;  // DIV R6,R5,R2 (R6 = 50 / 5 = 10)
-        mem[14] = 16'h0760;  // MOV R7,R6    (R7 = 10)
-        mem[15] = 16'h8700;  // OUT R7       (Out = 10)
-        mem[16] = 16'hF527;  // STOP R5,R2,R7(Out loops 50, then 5, then 10, then halts)
-        for (i = 17; i < 64; i = i + 1)
+        mem[8]  = 16'hD000;  // JSR
+        mem[9]  = 16'h000E;  // To address 14
+        mem[10] = 16'h8101;  // OUT A
+        mem[11] = 16'hF000;  // STOP
+        mem[12] = 16'h0000;
+        mem[13] = 16'h0000;
+        mem[14] = 16'h7101;  // IN A (At PC=15 during EXECUTE, so sw_in = 9)
+        mem[15] = 16'hE000;  // RTS
+        mem[16] = 16'h0000;
+        mem[17] = 16'h0000;
+        mem[18] = 16'h0000;
+        mem[19] = 16'h0000;
+        mem[20] = 16'h0000;
+        for (i = 21; i < 64; i = i + 1)
             mem[i] = 16'h0000;
     end
 
@@ -106,10 +109,10 @@ module cpu_tb;
         #(2*CLK_PERIOD);
         rst_n = 1;
         #(SIM_CYCLES * CLK_PERIOD);
-        if (cpu_out === 16'd10)
-            $display("[PASS] cpu_out = 10 at end of run. Halt trace should show Output 50, then 5, then 10.");
+        if (cpu_out === 16'd9)
+            $display("[PASS] cpu_out = 9 at end of run.");
         else
-            $display("[CHECK] cpu_out = %0d (expected 10 if all ops and multi-STOP worked).", cpu_out);
+            $display("[CHECK] cpu_out = %0d (expected 9 if IN values were correct and JSR/RTS worked).", cpu_out);
         $display("PC = %0d, SP = %0d", pc, sp);
         $finish;
     end
