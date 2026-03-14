@@ -175,6 +175,7 @@ localparam MUL = 4'b0011;
 localparam DIV = 4'b0100;
 localparam IN = 4'b0111;
 localparam OUT = 4'b1000;
+localparam BEQ = 4'b0101;
 localparam STOP = 4'b1111;
 // TEMPLATE ZA MOD
 localparam TWOADDRINST = 4'b1001;
@@ -279,7 +280,7 @@ always @(*) begin
             inc_pc = 1'b1; 
             
             // ir isnt loaded in this cycle, so we have to check from mem
-            if(mem[15:12] == MOV && mem[3:0] == 4'b1000) begin
+            if((mem[15:12] == MOV && mem[3:0] == 4'b1000) || mem[15:12] == BEQ) begin
                 // MOV OF array
                 state_next = FETCH3;
             end
@@ -381,7 +382,7 @@ always @(*) begin
                 yAddr_next = {3'b000, out_ir[6:4]};
                 y_next = mem;
                 // CHECK IF INSTRUCTION ONLY NEEDS X AND Y, OR WE NEED TO DECODE Z too
-                if (out_ir[15:12] == MOV) begin
+                if (out_ir[15:12] == MOV || out_ir[15:12] == BEQ) begin
                     state_next = EXECUTE;
                 end
                 else begin
@@ -406,7 +407,7 @@ always @(*) begin
             y_next = mem;
             we = 1'b0;
             // CHECK IF INSTRUCTION ONLY NEEDS X AND Y, OR WE NEED TO DECODE Z TOO
-            if (out_ir[15:12] == MOV) begin
+            if (out_ir[15:12] == MOV || out_ir[15:12] == BEQ) begin
                 state_next = EXECUTE;
             end
             else begin
@@ -506,6 +507,37 @@ always @(*) begin
                     else begin
                         state_next = HALT;
                     end
+                end
+                BEQ: begin
+                    if (out_ir[3:0] == 4'b1000) begin
+                        if(out_ir[11:8] == 0) begin
+                            if(out_ir[7:4] == 0) begin
+                                // 0 is equal to 0 so just jump
+                                in_pc = out_ir[21:16];
+                                ld_pc = 1'b1;
+                            end
+                            else if (y_reg == 0) begin
+                                // compare value at Y to 0
+                                in_pc = out_ir[21:16];
+                                ld_pc = 1'b1;
+                            end 
+                        end
+                        else if(out_ir[7:4] == 0) begin
+                            // compare value at X to 0
+                            if(x_reg == 0) begin
+                                in_pc = out_ir[21:16];
+                                ld_pc = 1'b1;
+                            end
+                        end
+                        else begin
+                            //compare equality betwen X and Y
+                            if (x_reg == y_reg) begin
+                                in_pc = out_ir[21:16];
+                                ld_pc = 1'b1;
+                            end
+                        end
+                    end
+                    state_next = FETCH1;
                 end
                 default: begin
                     $display("[%0t] ERROR: Unknown opcode %b at PC=%0d. Halting.", $time, out_ir[15:12], pc);
