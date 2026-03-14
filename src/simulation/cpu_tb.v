@@ -22,17 +22,17 @@ module memory_sim #(
     initial begin
         for (i = 0; i < 2**ADDR_WIDTH; i = i + 1)
             mem[i] = {DATA_WIDTH{1'b0}};
-        // Program (JSR and RTS test): PC starts at 8
+        // Program (Block MOV test): PC starts at 8
         mem[0] = 16'h0000; mem[1] = 16'h0000; mem[2] = 16'h0000; mem[3] = 16'h0000;
-        mem[4] = 16'h0000; mem[5] = 16'h0000; mem[6] = 16'h0000; mem[7] = 16'h0000;
-        mem[8]  = 16'hD000;  // JSR
-        mem[9]  = 16'h000E;  // To address 14
-        mem[10] = 16'h8101;  // OUT A
-        mem[11] = 16'hF000;  // STOP
-        mem[12] = 16'h0000;
+        mem[4] = 16'd10;   mem[5] = 16'd20;   mem[6] = 16'd30;   mem[7] = 16'h0000;
+        mem[8]  = 16'h0143;  // Block MOV: X=1, Y=4, N=3 => copy mem[4..6] to mem[1..3]
+        mem[9]  = 16'h8100;  // OUT 1 (should be 10)
+        mem[10] = 16'h8200;  // OUT 2 (should be 20)
+        mem[11] = 16'h8300;  // OUT 3 (should be 30)
+        mem[12] = 16'hF000;  // STOP
         mem[13] = 16'h0000;
-        mem[14] = 16'h7101;  // IN A (At PC=15 during EXECUTE, so sw_in = 9)
-        mem[15] = 16'hE000;  // RTS
+        mem[14] = 16'h0000;
+        mem[15] = 16'h0000;
         mem[16] = 16'h0000;
         mem[17] = 16'h0000;
         mem[18] = 16'h0000;
@@ -109,10 +109,10 @@ module cpu_tb;
         #(2*CLK_PERIOD);
         rst_n = 1;
         #(SIM_CYCLES * CLK_PERIOD);
-        if (cpu_out === 16'd9)
-            $display("[PASS] cpu_out = 9 at end of run.");
+        if (cpu_out === 16'd30)
+            $display("[PASS] cpu_out = 30 at end of run.");
         else
-            $display("[CHECK] cpu_out = %0d (expected 9 if IN values were correct and JSR/RTS worked).", cpu_out);
+            $display("[CHECK] cpu_out = %0d (expected 30 if Block MOV worked).", cpu_out);
         $display("PC = %0d, SP = %0d", pc, sp);
         $finish;
     end

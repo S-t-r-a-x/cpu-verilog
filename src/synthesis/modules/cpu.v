@@ -163,9 +163,11 @@ localparam EXECUTE = 5'b01110;
 localparam FETCH3 = 5'b01111;
 localparam FETCH4 = 5'b10000;
 
+// JSR RTS STATES
 localparam JSR_JMP = 5'b10001;
 localparam RTS_RET = 5'b10010;
 
+// MOV ARRAY STATES
 localparam MOV_ARRAY_GET_Y = 5'b10011;
 localparam MOV_ARRAY_SET_X = 5'b10100;
 
