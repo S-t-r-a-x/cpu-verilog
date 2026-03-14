@@ -279,7 +279,7 @@ always @(*) begin
             inc_pc = 1'b1; 
             
             // ir isnt loaded in this cycle, so we have to check from mem
-            if(mem[15:12] == TWOADDRINST) begin
+            if(mem[15:12] == MOV && mem[3:0] == 4'b1000) begin
                 // MOV OF array
                 state_next = FETCH3;
             end
@@ -456,10 +456,16 @@ always @(*) begin
             // Logic to perform the operation goes here
             case (out_ir[15:12])
                 MOV: begin
+                    // REGULAR MOV
                     if(out_ir[3:0] == 4'b0000) begin
                         addr = xAddr_reg;
                         we = 1'b1;
                         data = y_reg;
+                    end
+                    else if (out_ir[3:0] == 4'b1000) begin
+                        addr = xAddr_reg;
+                        we = 1'b1;
+                        data = out_ir[31:16];
                     end
                     state_next = FETCH1;
                 end
