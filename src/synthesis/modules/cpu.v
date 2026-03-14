@@ -125,8 +125,9 @@ register #(.DATA_WIDTH(DATA_WIDTH)) acc (
     .out(out_acc)
 );
 
-reg [15:0] x_reg, y_reg, z_reg, x_next, y_next, z_next;
-reg [5:0] xAddr_reg, yAddr_reg, zAddr_reg, xAddr_next, yAddr_next, zAddr_next;
+// X, Y, Z value and address stores
+reg [DATA_WIDTH-1:0] x_reg, y_reg, z_reg, x_next, y_next, z_next;
+reg [ADDR_WIDTH-1:0] xAddr_reg, yAddr_reg, zAddr_reg, xAddr_next, yAddr_next, zAddr_next;
 
 // ALU INSTANTIATION
 reg [2:0] alu_oc;
@@ -158,6 +159,10 @@ localparam DECODE_Z = 5'b01011;
 localparam DECODE_Z_INDIRECT_1 = 5'b01100;
 localparam DECODE_Z_INDIRECT_2 = 5'b01101;
 localparam EXECUTE = 5'b01110;
+localparam FETCH3 = 5'b01111;
+localparam FETCH4 = 5'b10000;
+
+
 localparam HALT = 5'b11111;
 
 // OPCODES
@@ -169,6 +174,8 @@ localparam DIV = 4'b0100;
 localparam IN = 4'b0111;
 localparam OUT = 4'b1000;
 localparam STOP = 4'b1111;
+// TEMPLATE ZA MOD
+localparam TWOADDRINST = 4'b1001;
 
 // ALU OPERATIONS
 localparam ALU_ADD = 3'b000;
@@ -269,6 +276,33 @@ always @(*) begin
             // 2. Increment PC so it points to the next instruction
             inc_pc = 1'b1; 
             
+            // ir isnt loaded in this cycle, so we have to check from mem
+            if(mem[15:12] == TWOADDRINST) begin
+                // MOV OF array
+                state_next = FETCH3;
+            end
+            else begin
+                // 3. Move to DECODE to actually look at what we fetched
+                state_next = DECODE;
+            end
+        end
+
+        FETCH3: begin
+            // 1. Put PC on the memory address bus
+            we = 1'b0;
+            addr = pc; 
+            state_next = FETCH4;
+        end
+        
+        FETCH4: begin
+            // 1. The memory has NOW output the correct instruction on 'mem'
+            // Route 'mem' into the 32-bit Instruction Register
+            in_ir = {mem, out_ir[15:0]}; 
+            ld_ir = 1'b1;
+            
+            // 2. Increment PC so it points to the next instruction
+            inc_pc = 1'b1; 
+            
             // 3. Move to DECODE to actually look at what we fetched
             state_next = DECODE;
         end
@@ -344,7 +378,7 @@ always @(*) begin
                 // Direct mode
                 yAddr_next = {3'b000, out_ir[6:4]};
                 y_next = mem;
-                /* // CHECK IF INSTRUCTION ONLY NEEDS X AND Y, OR WE NEED TO DECODE Z too
+                // CHECK IF INSTRUCTION ONLY NEEDS X AND Y, OR WE NEED TO DECODE Z too
                 if (out_ir[15:12] == MOV) begin
                     state_next = EXECUTE;
                 end
@@ -353,11 +387,7 @@ always @(*) begin
                     addr = {3'b000, out_ir[2:0]};
                     we = 1'b0;
                     state_next = DECODE_Z;
-                end */
-                // HAVE TO DECODE Z ALWAYS BECAUSE MOV CHECKS IF Z IS 0, SO EVERY 2 X Y INSTRUCTIONS NEEDS A Z
-                addr = {3'b000, out_ir[2:0]};
-                we = 1'b0;
-                state_next = DECODE_Z;
+                end
             end
         end
 
@@ -374,7 +404,7 @@ always @(*) begin
             y_next = mem;
             we = 1'b0;
             // CHECK IF INSTRUCTION ONLY NEEDS X AND Y, OR WE NEED TO DECODE Z TOO
-            /* if (out_ir[15:12] == MOV) begin
+            if (out_ir[15:12] == MOV) begin
                 state_next = EXECUTE;
             end
             else begin
@@ -382,17 +412,13 @@ always @(*) begin
                 addr = {3'b000, out_ir[2:0]};
                 we = 1'b0;
                 state_next = DECODE_Z;
-            end */
-            // HAVE TO DECODE Z ALWAYS BECAUSE MOV CHECKS IF Z IS 0, SO EVERY 2 X Y INSTRUCTIONS NEEDS A Z
-            addr = {3'b000, out_ir[2:0]};
-            we = 1'b0;
-            state_next = DECODE_Z;
+            end
         end
 
         // ======================== DECODE Z ===========================
 
         DECODE_Z: begin
-            // Indirect BIT - out_ir[7]
+            // Indirect BIT - out_ir[3]
             if(out_ir[3]) begin
                 // Indirect mode, go to reg for Y_addr, and place into mar
                 in_mar = mem[ADDR_WIDTH-1:0];
@@ -428,7 +454,7 @@ always @(*) begin
             // Logic to perform the operation goes here
             case (out_ir[15:12])
                 MOV: begin
-                    if(z_reg == 0) begin
+                    if(out_ir[3:0] == 4'b0000) begin
                         addr = xAddr_reg;
                         we = 1'b1;
                         data = y_reg;
@@ -465,9 +491,16 @@ always @(*) begin
                     end
                     state_next = HALT;
                 end
+                default: begin
+                    $display("[%0t] ERROR: Unknown opcode %b at PC=%0d. Halting.", $time, out_ir[15:12], pc);
+                    state_next = HALT;
+                end
             endcase
         end
-
+        default: begin
+            $display("[%0t] ERROR: CPU entered unknown state: %b. Halting.", $time, state_reg);
+            state_next = HALT;
+        end
     endcase
 end
 

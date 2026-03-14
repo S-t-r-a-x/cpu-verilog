@@ -15,3 +15,5 @@ db/
 *.jdi
 *.pin
 *.sof
+transcript
+*.wlf
