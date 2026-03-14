@@ -15,6 +15,9 @@ module memory #(
 
     always @(posedge clk) begin
         if (we) begin
+            // Executes first due to blocking assignment (=). 
+            // This allows the CPU to safely set `addr = new_addr` and `data = mem (old data)` in the same cycle.  
+            // The memory will write the old data to the new address, and then output that same data.
             mem[addr] = data;
         end
         out <= mem[addr];

@@ -71,7 +71,7 @@ register #(.DATA_WIDTH(32)) ir (
     .out(out_ir)
 );
 
-reg ld_mar, inc_mar;
+reg ld_mar, inc_mar, dec_mar;
 reg [ADDR_WIDTH-1:0] in_mar;
 wire [ADDR_WIDTH-1:0] out_mar; 
 register #(.DATA_WIDTH(ADDR_WIDTH)) mar (
@@ -80,7 +80,7 @@ register #(.DATA_WIDTH(ADDR_WIDTH)) mar (
     .cl(1'b0),
     .ld(ld_mar),
     .inc(inc_mar),
-    .dec(1'b0),
+    .dec(dec_mar),
     .sr(1'b0),
     .ir(1'b0),
     .sl(1'b0),
@@ -89,7 +89,7 @@ register #(.DATA_WIDTH(ADDR_WIDTH)) mar (
     .out(out_mar)
 );
 
-reg ld_mdr;
+reg ld_mdr, inc_mdr, dec_mdr;
 reg [DATA_WIDTH-1:0] in_mdr;
 wire [DATA_WIDTH-1:0] out_mdr; 
 register #(.DATA_WIDTH(DATA_WIDTH)) mdr (
@@ -97,8 +97,8 @@ register #(.DATA_WIDTH(DATA_WIDTH)) mdr (
     .rst_n(rst_n),
     .cl(1'b0),
     .ld(ld_mdr),
-    .inc(1'b0),
-    .dec(1'b0),
+    .inc(inc_mdr),
+    .dec(dec_mdr),
     .sr(1'b0),
     .ir(1'b0),
     .sl(1'b0),
@@ -163,6 +163,8 @@ localparam FETCH3 = 5'b01111;
 localparam FETCH4 = 5'b10000;
 
 
+localparam STOP_Y = 5'b11101;
+localparam STOP_Z = 5'b11110;
 localparam HALT = 5'b11111;
 
 // OPCODES
@@ -239,8 +241,8 @@ always @(*) begin
     ld_pc = 1'b0; inc_pc = 1'b0; in_pc = {ADDR_WIDTH{1'b0}};
     ld_sp = 1'b0; inc_sp = 1'b0; dec_sp = 1'b0; in_sp = {ADDR_WIDTH{1'b0}};
     ld_ir = 1'b0; in_ir = 32'b0;
-    ld_mar = 1'b0; inc_mar = 1'b0; in_mar = {ADDR_WIDTH{1'b0}};
-    ld_mdr = 1'b0; in_mdr = {DATA_WIDTH{1'b0}};
+    ld_mar = 1'b0; inc_mar = 1'b0; dec_mar = 1'b0; in_mar = {ADDR_WIDTH{1'b0}};
+    ld_mdr = 1'b0; inc_mdr = 1'b0; dec_mdr = 1'b0; in_mdr = {DATA_WIDTH{1'b0}};
     ld_acc = 1'b0; in_acc = {DATA_WIDTH{1'b0}};
 
     case (state_reg)
@@ -482,20 +484,37 @@ always @(*) begin
                 STOP: begin
                     if(out_ir[11:8] != 0) begin
                         out_next = x_reg;
+                        if(out_ir[7:4] != 0) state_next = STOP_Y;
+                        else if(out_ir[3:0] != 0) state_next = STOP_Z;
+                        else state_next = HALT;
                     end
                     else if (out_ir[7:4] != 0) begin
                         out_next = y_reg;
+                        if(out_ir[3:0] != 0) state_next = STOP_Z;
+                        else state_next = HALT;
                     end
                     else if (out_ir[3:0] != 0) begin
                         out_next = z_reg;
+                        state_next = HALT;
                     end
-                    state_next = HALT;
+                    else begin
+                        state_next = HALT;
+                    end
                 end
                 default: begin
                     $display("[%0t] ERROR: Unknown opcode %b at PC=%0d. Halting.", $time, out_ir[15:12], pc);
                     state_next = HALT;
                 end
             endcase
+        end
+        STOP_Y: begin
+            out_next = y_reg;
+            if(out_ir[3:0] != 0) state_next = STOP_Z;
+            else state_next = HALT;
+        end
+        STOP_Z: begin
+            out_next = z_reg;
+            state_next = HALT;
         end
         default: begin
             $display("[%0t] ERROR: CPU entered unknown state: %b. Halting.", $time, state_reg);

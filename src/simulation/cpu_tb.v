@@ -22,23 +22,20 @@ module memory_sim #(
     initial begin
         for (i = 0; i < 2**ADDR_WIDTH; i = i + 1)
             mem[i] = {DATA_WIDTH{1'b0}};
-        // Program (same as mem_init.mif): PC starts at 8
+        // Program: Full Instruction Set Test (PC starts at 8)
         mem[0] = 16'h0000; mem[1] = 16'h0000; mem[2] = 16'h0000; mem[3] = 16'h0000;
         mem[4] = 16'h0000; mem[5] = 16'h0000; mem[6] = 16'h0000; mem[7] = 16'h0000;
-        mem[8]  = 16'h7101;  // IN A
-        mem[9]  = 16'h8101;  // OUT A
-        mem[10] = 16'h0210;  // MOV B, A
-        mem[11] = 16'h1312;  // ADD C, A, B
-        mem[12] = 16'h8301;  // OUT C
-        mem[13] = 16'h7401;  // IN D
-        mem[14] = 16'h2334;  // SUB C, C, D
-        mem[15] = 16'h0530;  // MOV E, C
-        mem[16] = 16'h8501;  // OUT E
-        mem[17] = 16'h7301;  // IN C
-        mem[18] = 16'h3553;  // MUL E, E, C
-        mem[19] = 16'h8501;  // OUT E
-        mem[20] = 16'hF000;  // STOP
-        for (i = 21; i < 64; i = i + 1)
+        
+        mem[8]  = 16'h7100;  // IN R1        (R1 = 10 from sw_in)
+        mem[9]  = 16'h7200;  // IN R2        (R2 = 5 from sw_in)
+        mem[10] = 16'h1312;  // ADD R3,R1,R2 (R3 = 10 + 5 = 15)
+        mem[11] = 16'h2432;  // SUB R4,R3,R2 (R4 = 15 - 5 = 10)
+        mem[12] = 16'h3542;  // MUL R5,R4,R2 (R5 = 10 * 5 = 50)
+        mem[13] = 16'h4652;  // DIV R6,R5,R2 (R6 = 50 / 5 = 10)
+        mem[14] = 16'h0760;  // MOV R7,R6    (R7 = 10)
+        mem[15] = 16'h8700;  // OUT R7       (Out = 10)
+        mem[16] = 16'hF527;  // STOP R5,R2,R7(Out loops 50, then 5, then 10, then halts)
+        for (i = 17; i < 64; i = i + 1)
             mem[i] = 16'h0000;
     end
 
@@ -71,13 +68,10 @@ module cpu_tb;
 
     // CPU input (for IN instruction): driven combinationally from PC.
     // PC is already incremented to N+1 when EXECUTE of instruction at N runs.
-    // IN A  is at addr  8, so during its EXECUTE pc = 9  -> need sw_in = 8
-    // IN D  is at addr 13, so during its EXECUTE pc = 14 -> need sw_in = 9
-    // IN C  is at addr 17, so during its EXECUTE pc = 18 -> need sw_in = 3
     always @(*) begin
-        if      (pc < 14) sw_in = 16'd8;
-        else if (pc < 18) sw_in = 16'd9;
-        else              sw_in = 16'd3;
+        if      (pc == 9)   sw_in = 16'd10;  // for IN R1 at PC=8
+        else if (pc == 10)  sw_in = 16'd5;   // for IN R2 at PC=9
+        else                sw_in = 16'd0;
     end
 
     memory_sim #(.ADDR_WIDTH(ADDR_WIDTH), .DATA_WIDTH(DATA_WIDTH)) u_mem (
@@ -103,7 +97,7 @@ module cpu_tb;
     );
 
     // Print PC, SP, and output whenever PC changes (after reset)
-    always @(pc)
+    always @(pc, cpu_out)
         if (rst_n)
             $display("[trace] PC=%0d SP=%0d out=%0d", pc, sp, cpu_out);
 
@@ -112,10 +106,10 @@ module cpu_tb;
         #(2*CLK_PERIOD);
         rst_n = 1;
         #(SIM_CYCLES * CLK_PERIOD);
-        if (cpu_out === 16'd21)
-            $display("[PASS] cpu_out = 21 at end of run.");
+        if (cpu_out === 16'd10)
+            $display("[PASS] cpu_out = 10 at end of run. Halt trace should show Output 50, then 5, then 10.");
         else
-            $display("[CHECK] cpu_out = %0d (expected 21 if IN values were correct).", cpu_out);
+            $display("[CHECK] cpu_out = %0d (expected 10 if all ops and multi-STOP worked).", cpu_out);
         $display("PC = %0d, SP = %0d", pc, sp);
         $finish;
     end
