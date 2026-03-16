@@ -191,7 +191,6 @@ module DE0_TOP (CLOCK_50,
     assign {HEX3_D, HEX2_D, HEX1_D, HEX0_D} = hex_core;
     assign {HEX3_DP, HEX2_DP, HEX1_DP, HEX0_DP} = 4'hF;
 
-    // Unused board peripherals are disabled for this project top.
     assign UART_TXD = 1'b1;
     assign UART_CTS = 1'b1;
     assign DRAM_ADDR = 13'h0000;
@@ -224,17 +223,11 @@ module DE0_TOP (CLOCK_50,
     assign SD_DAT3 = 1'bZ;
     assign SD_CMD = 1'bZ;
     assign SD_CLK = 1'b0;
-    assign VGA_HS = 1'b0;
-    assign VGA_VS = 1'b0;
-    assign VGA_R = 4'h0;
-    assign VGA_G = 4'h0;
-    assign VGA_B = 4'h0;
+    
     assign GPIO0_CLKOUT = 2'b00;
     assign GPIO0_D = 32'hZZZZZZZZ;
     assign GPIO1_CLKOUT = 2'b00;
     assign GPIO1_D = 32'hZZZZZZZZ;
-    assign PS2_KBDAT = 1'bZ;
-    assign PS2_KBCLK = 1'bZ;
     assign PS2_MSDAT = 1'bZ;
     assign PS2_MSCLK = 1'bZ;
 
@@ -248,6 +241,8 @@ module DE0_TOP (CLOCK_50,
         .rst_n(SW[9]),
         .btn(~BUTTON[2:0]),
         .sw(SW[8:0]),
+        .kbd({PS2_KBDAT, PS2_KBCLK}),
+        .mnt({VGA_HS, VGA_VS, VGA_R, VGA_G, VGA_B}),
         .led(led_core),
         .hex(hex_core)
     );

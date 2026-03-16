@@ -99,18 +99,12 @@ module DE0_CV_TOP(input CLOCK2_50,
     assign DRAM_DQ = 16'hZZZZ;
     assign GPIO_0 = 36'hZZZZZZZZZ;
     assign GPIO_1 = 36'hZZZZZZZZZ;
-    assign PS2_CLK = 1'bZ;
     assign PS2_CLK2 = 1'bZ;
-    assign PS2_DAT = 1'bZ;
     assign PS2_DAT2 = 1'bZ;
     assign SD_CLK = 1'b0;
     assign SD_CMD = 1'bZ;
     assign SD_DATA = 4'bZZZZ;
-    assign VGA_B = 4'h0;
-    assign VGA_G = 4'h0;
-    assign VGA_HS = 1'b0;
-    assign VGA_R = 4'h0;
-    assign VGA_VS = 1'b0;
+    
 
     top #(
         .DIVISOR(50_000_000),
@@ -122,6 +116,8 @@ module DE0_CV_TOP(input CLOCK2_50,
         .rst_n(RESET_N),
         .btn(~KEY[2:0]),
         .sw(SW[8:0]),
+        .kbd({PS2_DAT, PS2_CLK}),
+        .mnt({VGA_HS, VGA_VS, VGA_R, VGA_G, VGA_B}),
         .led(led_core),
         .hex(hex_core)
     );
