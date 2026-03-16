@@ -196,7 +196,7 @@ reg [DATA_WIDTH-1:0] out_reg, out_next;
 assign out = out_reg;
 
 // ========================================================
-// STATE MEMORY - Sequential, updates the state
+// STATE MEMORY - Sequential, only updates the state
 // ========================================================
 always @(posedge clk, negedge rst_n) begin
     if(!rst_n) begin

@@ -7,8 +7,10 @@ module top #(
 )(
     input wire clk,
     input wire rst_n,
+    input wire [1:0] kbd,
     input wire [2:0]btn,
     input wire [8:0]sw,
+    output wire [13:0] mnt,
     output wire [9:0]led,
     output wire [27:0]hex
 );
@@ -20,6 +22,9 @@ module top #(
         .out(slow_clk)
     );
 
+    // --- MODULE OUT WIRES ---
+    // CPU
+    wire cpu_status;
     wire cpu_we;
     wire [ADDR_WIDTH-1:0] cpu_addr;
     wire [DATA_WIDTH-1:0] cpu_data;
@@ -27,6 +32,19 @@ module top #(
     wire [DATA_WIDTH-1:0] mem_out;
     wire [ADDR_WIDTH-1:0] pc;
     wire [ADDR_WIDTH-1:0] sp;
+    // PS2
+    wire [15:0] ps2_code;
+    // SCAN_CODES
+    wire sc_control;
+    wire [3:0] sc_num;
+    // COLOR CODES
+    wire [23:0] cc_code;
+    // VGA
+    wire vga_hsync;
+    wire vga_vsync;
+    wire [3:0] vga_red;
+    wire [3:0] vga_green;
+    wire [3:0] vga_blue;
 
     // --- BUTTONS: DEBOUNCER + RED (for presses) ---
     wire [2:0] btn_db, btn_clean;
@@ -50,10 +68,7 @@ module top #(
                 .out(sw_clean[i])  
             );
         end
-    endgenerate
-
-    wire [DATA_WIDTH-1:0] cpu_in;
-    assign cpu_in = {{(DATA_WIDTH-4){1'b0}}, sw_clean[3:0]};  
+    endgenerate 
 
     // --- MEMORY ---
     memory #(
@@ -70,6 +85,9 @@ module top #(
     );
 
     // --- CPU ---
+    wire [DATA_WIDTH-1:0] cpu_in;
+    assign cpu_in = {{(DATA_WIDTH-4){1'b0}}, sc_num}; 
+    
     cpu #(
         .ADDR_WIDTH(ADDR_WIDTH),
         .DATA_WIDTH(DATA_WIDTH)
@@ -77,7 +95,9 @@ module top #(
         .clk(slow_clk),
         .rst_n(rst_n),
         .mem(mem_out),
-        .in(cpu_in),     
+        .in(cpu_in),
+        .control(sc_control),  
+        .status(cpu_status),   
         .we(cpu_we),
         .addr(cpu_addr),
         .data(cpu_data),
@@ -86,8 +106,54 @@ module top #(
         .sp(sp)
     );
 
+    // --- PS2 ---
+
+    ps2 u_ps2 (
+        .clk(clk),
+        .rst_n(rst_n),
+        .ps2_clk(kbd[0]),
+        .ps2_data(kbd[1]),
+        .code(ps2_code)
+    );
+
+    // --- SCAN CODES ---
+    
+    scan_codes u_scan_codes (
+        .clk(clk),
+        .rst_n(rst_n),
+        .code(ps2_code),
+        .status(cpu_status),
+        .control(sc_control),
+        .num(sc_num)
+    );
+
+    // --- COLOR CODES ---
+    wire [5:0] cc_num;
+    assign cc_num = cpu_out[5:0];
+
+    color_codes u_color_codes (
+        .num(cc_num),
+        .code(cc_code)
+    );
+
+    // --- VGA ---
+    vga u_vga (
+        .clk(clk),
+        .rst_n(rst_n),
+        .code(cc_code),
+        .hsync(vga_hsync),
+        .vsync(vga_vsync),
+        .red(vga_red),
+        .green(vga_green),
+        .blue(vga_blue)
+    );
+
+
+    // --- MNT ---
+    assign mnt = {vga_hsync, vga_vsync, vga_red, vga_green, vga_blue};
+
     // --- LEDS ---
-    assign led[9:0] = {{5{1'b0}}, cpu_out[4:0]};
+    assign led[9:0] = {{4{1'b0}}, cpu_status, cpu_out[4:0]};
 
     // --- BCD + SSD for PC and SP ---
     wire [3:0] pc_ones, pc_tens, sp_ones, sp_tens;
