@@ -6,6 +6,8 @@ module cpu #(
     input rst_n,
     input[DATA_WIDTH-1:0] mem,
     input[DATA_WIDTH-1:0] in,
+    input control,
+    output reg status,
     output reg we,
     output reg[ADDR_WIDTH-1:0] addr,
     output reg[DATA_WIDTH-1:0] data,
@@ -161,7 +163,7 @@ localparam DECODE_Z_INDIRECT_2 = 5'b01101;
 localparam EXECUTE = 5'b01110;
 localparam FETCH3 = 5'b01111;
 localparam FETCH4 = 5'b10000;
-
+localparam WAIT_IN = 5'b10001;
 
 localparam STOP_Y = 5'b11101;
 localparam STOP_Z = 5'b11110;
@@ -194,7 +196,7 @@ reg [DATA_WIDTH-1:0] out_reg, out_next;
 assign out = out_reg;
 
 // ========================================================
-// 1. STATE MEMORY (Sequential - Only updates the state)
+// STATE MEMORY - Sequential, updates the state
 // ========================================================
 always @(posedge clk, negedge rst_n) begin
     if(!rst_n) begin
@@ -220,7 +222,7 @@ always @(posedge clk, negedge rst_n) begin
 end
 
 // ========================================================
-// 2. NEXT STATE & CONTROL LOGIC (Combinational)
+// NEXT STATE & CONTROL LOGIC - Combinational
 // ========================================================
 always @(*) begin
     // Default assignments to prevent latches and reset control wires!
@@ -233,6 +235,7 @@ always @(*) begin
     yAddr_next = yAddr_reg;
     zAddr_next = zAddr_reg;
     we = 1'b0;
+    status = 1'b0;
     addr = {ADDR_WIDTH{1'b0}};
     data = {DATA_WIDTH{1'b0}};
     alu_oc = 3'b000;
@@ -262,7 +265,7 @@ always @(*) begin
         end
         
         FETCH1: begin
-            // 1. Put PC on the memory address bus
+            // put PC on the memory address bus
             we = 1'b0;
             addr = pc; 
 
@@ -270,42 +273,40 @@ always @(*) begin
         end
         
         FETCH2: begin
-            // 1. The memory has NOW output the correct instruction on 'mem'
-            // Route 'mem' into the 32-bit Instruction Register
+            // The memory has NOW output the correct instruction on mem
             in_ir = {16'b0, mem}; 
             ld_ir = 1'b1;
             
-            // 2. Increment PC so it points to the next instruction
+            // Increment PC so it points to the next instruction
             inc_pc = 1'b1; 
             
             // ir isnt loaded in this cycle, so we have to check from mem
             if(mem[15:12] == TWOADDRINST) begin
-                // MOV OF array
+                // MOV of array
                 state_next = FETCH3;
             end
             else begin
-                // 3. Move to DECODE to actually look at what we fetched
+                // Move to DECODE to actually look at what we fetched
                 state_next = DECODE;
             end
         end
 
         FETCH3: begin
-            // 1. Put PC on the memory address bus
+            // put PC on the memory address bus
             we = 1'b0;
             addr = pc; 
             state_next = FETCH4;
         end
         
         FETCH4: begin
-            // 1. The memory has NOW output the correct instruction on 'mem'
-            // Route 'mem' into the 32-bit Instruction Register
+            // The memory has NOW output the correct instruction on mem
             in_ir = {mem, out_ir[15:0]}; 
             ld_ir = 1'b1;
             
-            // 2. Increment PC so it points to the next instruction
+            // Increment PC so it points to the next instruction
             inc_pc = 1'b1; 
             
-            // 3. Move to DECODE to actually look at what we fetched
+            // Move to DECODE to actually look at what we fetched
             state_next = DECODE;
         end
 
@@ -472,10 +473,15 @@ always @(*) begin
                     state_next = FETCH1;
                 end
                 IN: begin
+                    status = 1'b1;
+                    state_next = WAIT_IN;
+                    /*
+                    OLD IN CODE
                     addr = xAddr_reg;
                     we = 1'b1;
                     data = in;
                     state_next = FETCH1;
+                    */
                 end
                 OUT: begin
                     out_next = x_reg;
@@ -506,6 +512,20 @@ always @(*) begin
                     state_next = HALT;
                 end
             endcase
+        end
+        WAIT_IN: begin
+            if(control == 1) begin
+                addr = xAddr_next;
+                data = in;
+                we = 1'b1;
+                // end instruction execution
+                state_next = FETCH1;
+            end
+            else begin
+                // BLOCKING, wait for control to be 1, and keep setting status
+                status = 1'b1;
+                state_next = WAIT_IN;
+            end
         end
         STOP_Y: begin
             out_next = y_reg;
