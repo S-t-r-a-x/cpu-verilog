@@ -514,8 +514,9 @@ always @(*) begin
             endcase
         end
         WAIT_IN: begin
+            status = 1'b1;
             if(control == 1) begin
-                addr = xAddr_next;
+                addr = xAddr_reg;
                 data = in;
                 we = 1'b1;
                 // end instruction execution
@@ -523,7 +524,6 @@ always @(*) begin
             end
             else begin
                 // BLOCKING, wait for control to be 1, and keep setting status
-                status = 1'b1;
                 state_next = WAIT_IN;
             end
         end

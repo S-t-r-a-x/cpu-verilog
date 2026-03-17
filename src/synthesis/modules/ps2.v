@@ -31,7 +31,7 @@ always @(posedge clk, negedge rst_n) begin
         
         if (bit_cnt == 4'd10) begin
             // received all 11 bits
-            code_reg <= {code_reg[7:0], shift_reg[8:1]};
+            code_reg <= {code_reg[7:0], shift_reg[9:2]};
             bit_cnt <= 4'd0; // reset for next frame
         end else begin
             bit_cnt <= bit_cnt + 1'b1;

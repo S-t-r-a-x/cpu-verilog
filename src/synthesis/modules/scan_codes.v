@@ -23,23 +23,25 @@ reg control_reg;
 
 assign num = num_reg;
 assign control = control_reg;
+reg armed;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         num_reg <= 4'd0;
         control_reg <= 1'b0;
+        armed <= 1'b0;
     end else begin
-        // reset control if status s 0
+        if (code[15:8] != 8'hF0) begin
+            armed <= 1'b1;
+        end
+        
         if (status == 1'b0) begin
             control_reg <= 1'b0;
         end
-        // Only translate if status == 1
-        // AND the key was just released - code[15:8] == F0
-        // AND it hasn't already been translated - control still 0
-        else if (status == 1'b1 && code[15:8] == 8'hF0 && control_reg == 1'b0) begin
-
+        else if (status == 1'b1 && code[15:8] == 8'hF0 && control_reg == 1'b0 && armed == 1'b1) begin
             // Look at the latest byte and translate
             control_reg <= 1'b1;
+            armed <= 1'b0;
             case (code[7:0])
                 ZERO : num_reg <= 4'd0;
                 ONE  : num_reg <= 4'd1;
@@ -51,7 +53,11 @@ always @(posedge clk or negedge rst_n) begin
                 SEVEN: num_reg <= 4'd7;
                 EIGHT: num_reg <= 4'd8;
                 NINE : num_reg <= 4'd9;
-                default: control_reg <= 1'b0; // Ignore non digit keys
+                default: begin 
+                    // Ignore non digit keys
+                    control_reg <= 1'b0; 
+                    armed <= 1'b1;      
+                end
             endcase
             
         end

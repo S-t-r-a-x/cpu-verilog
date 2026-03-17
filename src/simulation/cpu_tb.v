@@ -74,6 +74,22 @@ module cpu_tb;
         else                sw_in = 16'd0;
     end
 
+    reg control;
+    wire status;
+
+    // Pulse control for one cycle when status is high to satisfy the IN handshake
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            control <= 1'b0;
+        end else begin
+            if (status) begin
+                control <= 1'b1;
+            end else begin
+                control <= 1'b0;
+            end
+        end
+    end
+
     memory_sim #(.ADDR_WIDTH(ADDR_WIDTH), .DATA_WIDTH(DATA_WIDTH)) u_mem (
         .clk(clk),
         .we(we),
@@ -88,6 +104,8 @@ module cpu_tb;
         .rst_n(rst_n),
         .mem(mem_out),
         .in(sw_in),
+        .control(control),
+        .status(status),
         .we(we),
         .addr(addr),
         .data(cpu_data),

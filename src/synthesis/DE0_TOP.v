@@ -228,6 +228,8 @@ module DE0_TOP (CLOCK_50,
     assign GPIO0_D = 32'hZZZZZZZZ;
     assign GPIO1_CLKOUT = 2'b00;
     assign GPIO1_D = 32'hZZZZZZZZ;
+    assign PS2_KBDAT = 1'bZ;
+    assign PS2_KBCLK = 1'bZ;
     assign PS2_MSDAT = 1'bZ;
     assign PS2_MSCLK = 1'bZ;
 
