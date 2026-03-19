@@ -34,10 +34,13 @@ Instructions are generally 1 or 2 words long. The CPU uses a 3-address format (D
 | `0001` | **ADD** | `X = Y + Z` |
 | `0010` | **SUB** | `X = Y - Z` |
 | `0011` | **MUL** | `X = Y * Z` |
-| `0100` | **DIV** | `X = Y / Z` _(Spec notes division as unsupported depending on config)_ |
+| `0100` | **DIV** | `X = Y / Z` _(See hardware note below)_ |
 | `0111` | **IN** | Blocks CPU and waits for user data via PS/2 keyboard |
 | `1000` | **OUT** | Outputs `X` to internal color mappings and LEDs |
 | `1111` | **STOP** | Halts execution, sequentially outputting non-zero operands |
+
+> [!TIP]
+> **A Note on Hardware Division:** The `DIV` instruction is fully supported within the CPU's state machine; however, it utilizes a 16-bit combinational divider in the ALU. While functional, combinational division is extremely resource-intensive for FPGAs. To ensure optimal timing performance ($F_{max}$) and resource efficiency, it is recommended to use bit-shifting or iterative subtraction for division operations where possible.
 
 ---
 
@@ -80,11 +83,20 @@ Instructions are generally 1 or 2 words long. The CPU uses a 3-address format (D
 └── PROCESSOR SPECS.txt     # Rough CPU and ISA documentation
 ```
 
+## Prerequisites
+
+Before running the project, assure you have the following installed and setup:
+- **Intel Quartus Prime** (or Quartus II) installed and added to your system `PATH`.
+- **GNU Make** installed.
+- **Hardware:** DE0 or DE0-CV FPGA development board.
+- *(Optional)* **PS/2 Keyboard** and **VGA Monitor** connected to the board logic.
+
 ## How to Run
 
-1. Open Intel Quartus Prime.
-2. Load the project utilizing either the Cyclone III (`DE0`-based) or Cyclone V (`DE0_CV`-based) top files.
-3. Ensure `mem_init.mif` is synthesized as your Memory Initialization File in `memory.v`.
-4. Compile the design.
-5. Program the DE0 / DE0-CV FPGA via USB-Blaster.
-6. Connect a PS/2 Keyboard and VGA Monitor to the respective board ports. The CPU displays logic and pauses on `IN` operations awaiting keyboard input.
+1. Connect your DE0 / DE0-CV FPGA board to your PC via USB (USB-Blaster).
+2. Open a terminal in the root of the project repository.
+3. Run the following command to synthesize the project and program the board:
+   ```bash
+   make synth_pgm
+   ```
+4. Once programmed, the CPU will begin execution automatically. If you have connected a PS/2 Keyboard, it will process the `IN` operations by pausing and awaiting key inputs, visualizing states via the onboard Seven-Segment displays and LEDs.
