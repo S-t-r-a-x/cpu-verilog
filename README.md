@@ -78,9 +78,7 @@ Instructions are generally 1 or 2 words long. The CPU uses a 3-address format (D
 │       ├── vga.v, color_codes.v
 │       ├── bcd.v, ssd.v
 │       └── ...
-├── mem_init.mif            # Assembly compiled to Memory Initialization format
-├── plan.md                 # Initial implementation checklist and architecture spec
-└── PROCESSOR SPECS.txt     # Rough CPU and ISA documentation
+└── mem_init.mif            # Assembly compiled to Memory Initialization format
 ```
 
 ## Prerequisites
