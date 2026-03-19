@@ -1,5 +1,4 @@
 *.log
-*.md
 work/
 xpack/
 *.pdf
@@ -17,3 +16,6 @@ db/
 *.sof
 transcript
 *.wlf
+verification/
+Processor resources/
+*.txt
