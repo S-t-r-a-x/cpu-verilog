@@ -2,17 +2,13 @@
 db/
 incremental_db/
 hc_output/
-*.log
+work/
 transcript
+*~
+vlog_compile.log 
+waveform.wlf
+*.log
 *.wlf
-
-# External and Documentation
-*.pdf
-verification/
-Processor resources/
-*.txt
-
-# Project Config (Ignore local overrides, keep the templates in tooling/config)
 *.qpf
 *.qsf
 *.sdc
@@ -29,3 +25,9 @@ smart.log
 *.smsg 
 *.echo 
 *.chg
+
+# External and Documentation
+*.pdf
+verification/
+Processor resources/
+*.txt
