@@ -1,21 +1,33 @@
-*.log
-work/
-xpack/
-*.pdf
-incremental_db/
+# Build and Tool Artifacts
 db/
-*.rpt
-*.smsg
+incremental_db/
+hc_output/
+work/
+transcript
+*~
+vlog_compile.log 
+waveform.wlf
+*.log
+*.wlf
 *.qpf
 *.qsf
-*.summary
-*.chg
-*.eqn
+*.sdc
+*.qdf 
 *.jdi
-*.pin
-*.sof
-transcript
-*.wlf
+*.eqn 
+*.pin 
+*.sof 
+*.pof
+smart.log 
+*.rpt 
+*.htm 
+*.summary 
+*.smsg 
+*.echo 
+*.chg
+
+# External and Documentation
+*.pdf
 verification/
 Processor resources/
 *.txt
