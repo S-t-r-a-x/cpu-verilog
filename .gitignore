@@ -1,21 +1,31 @@
-*.log
-work/
-xpack/
-*.pdf
-incremental_db/
+# Build and Tool Artifacts
 db/
-*.rpt
-*.smsg
-*.qpf
-*.qsf
-*.summary
-*.chg
-*.eqn
-*.jdi
-*.pin
-*.sof
+incremental_db/
+hc_output/
+*.log
 transcript
 *.wlf
+
+# External and Documentation
+*.pdf
 verification/
 Processor resources/
 *.txt
+
+# Project Config (Ignore local overrides, keep the templates in tooling/config)
+*.qpf
+*.qsf
+*.sdc
+*.qdf 
+*.jdi
+*.eqn 
+*.pin 
+*.sof 
+*.pof
+smart.log 
+*.rpt 
+*.htm 
+*.summary 
+*.smsg 
+*.echo 
+*.chg
