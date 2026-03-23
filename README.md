@@ -1,4 +1,4 @@
-# 16-bit Custom CPU on FPGA - picoComputer Architecture
+# VLSI picoComputer
 
 This repository contains the RTL implementation of a custom 16-bit Central Processing Unit (CPU) designed for Cyclone III (DE0) and Cyclone V (DE0-CV) FPGA development boards.
 
@@ -35,6 +35,15 @@ The CPU uses a 3-address instruction format (1 or 2 words long) supporting direc
 - **7-Segment Displays**: Live visualization of the Program Counter (PC) and Stack Pointer (SP).
 - **Hardware Debouncing**: Clean input handling for buttons and switches.
 - **Status LEDs**: `LED[5]` indicates when the processor is ready for input (`IN` instruction), while `LED[4:0]` function as standard output (`OUT`).
+
+## Core Hardware Modules
+
+- **`cpu.v`**: The main processor implementation, acting as a Finite State Machine (FSM) to fetch, decode, and execute instructions.
+- **`alu.v`**: The Arithmetic Logic Unit executing data manipulation and mathematical operations.
+- **`memory.v`**: The 64-word memory block responsible for managing both the General Purpose Registers (GPRs) and executable program memory.
+- **`vga.v` & `color_codes.v`**: Modules responsible for video signal synchronization and translating data into RGB color outputs.
+- **`ps2.v` & `scan_codes.v`**: PS/2 keyboard interfacing modules that process keystrokes into format-compliant CPU inputs.
+- **`debouncer.v` & `red.v`**: Hardware debouncing and rising-edge detection for clean button and switch inputs.
 
 ## Repository Structure
 
@@ -96,14 +105,7 @@ Other synthesis targets:
 - `synth_pgm`: Automatically programs the connected FPGA device with the compiled `.sof` file.
 - `synth_clean`: Removes Quartus build files and logs.
 
-## Customizing the Target Board
-
-By default, the compilation targets the Cyclone III `DE0_TOP`. To change this to Cyclone V `DE0_CV_TOP`, modify the following variables in `tooling/makefile`:
-```makefile
-SYNTH_TOP_LEVEL_MODULE = DE0_CV_TOP
-SYNTH_DEVICE_FAMILY = CycloneV
-SYNTH_DEVICE_PART = 5CEBA4F23C7
-```
+> **Note on Target Boards**: By default, the compilation targets the Cyclone III `DE0_TOP`. To change this to Cyclone V `DE0_CV_TOP`, modify the `SYNTH_TOP_LEVEL_MODULE`, `SYNTH_DEVICE_FAMILY`, and `SYNTH_DEVICE_PART` variables inside `tooling/makefile`.
 
 ## Academic Context
 
