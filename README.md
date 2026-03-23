@@ -1,100 +1,110 @@
-# picoComputer FPGA Implementation
+# 16-bit Custom CPU on FPGA - picoComputer Architecture
 
-This project implements a custom 16-bit **picoComputer** (CPU architecture) targeting Altera/Intel Cyclone III (DE0) and Cyclone V (DE0-CV) FPGA boards. Originally based on a VLSI course's second pre-exam assignment, the project has been significantly extended to include **PS/2 Keyboard** support for asynchronous input and **VGA Output** for visual data representation.
+This repository contains the RTL implementation of a custom 16-bit Central Processing Unit (CPU) designed for Cyclone III (DE0) and Cyclone V (DE0-CV) FPGA development boards.
 
-## Features
-
-- **Custom CPU Architecture**: A multi-cycle processor pipeline with Fetch, Decode, Execute, and Wait states.
-- **Synchronous Memory**: 64x16-bit RAM divided into fixed GPR (General Purpose Registers) zero-page and free program/data zones.
-- **PS/2 Keyboard Integration**: Fully custom PS/2 shift-register and scan-code translator enabling numeric key input directly into the CPU.
-- **VGA Display Pipeline**: Hardware VGA controller with dynamically generated colors based on CPU computations.
-- **Hardware Debouncing & Edge Detection**: Robust button and switch inputs.
-- **Seven-Segment Diagnostics**: Real-time BCD-driven display of the Program Counter (PC) and Stack Pointer (SP).
-
----
+The project is written in Verilog and includes a complete toolchain setup for both simulation and synthesis, using Altera Quartus 13.1 and ModelSim/QuestaSim.
 
 ## CPU Architecture
 
-The picoComputer operates on a derived 1 Hz clock (`slow_clk`) for visual debugging while keyboard/VGA controllers operate at the native 50 MHz board clock. 
+This processor is based on the **picoComputer** architecture. Key technical specifications include:
+- **16-bit Data / 6-bit Address Space**: The memory has 64 words of 16-bits each.
+  - Memory locations `[0-7]`: General Purpose Registers (GPR).
+  - Memory locations `[8+]`: Program memory (execution starts at `PC = 8`).
+  - Stack grows downwards from the highest memory location (`SP` starts at 63).
+- **Clock Management**: The board's native 50MHz clock is divided down to 1Hz for visibly tracing the processor's execution in hardware.
 
-**Registers:**
-- `PC` (Program Counter) - Starts at Address 8
-- `SP` (Stack Pointer) - Starts at Address 63
-- `IR` (Instruction Register, 32-bit)
-- `MAR` (Memory Address Register)
-- `MDR` (Memory Data Register)
-- `ACC` (Accumulator)
+### Instruction Set
 
-**Instruction Set Architecture (ISA):**
-Instructions are generally 1 or 2 words long. The CPU uses a 3-address format (Destination/X, Operand 1/Y, Operand 2/Z). Each operand specifies whether it uses direct or memory-indirect addressing. 
+The CPU uses a 3-address instruction format (1 or 2 words long) supporting direct and indirect addressing modes.
 
-| Opcode | Mnemonic | Description |
-|:---:|:---|:---|
-| `0000` | **MOV** | `X = Y` (Data transfer) |
-| `0001` | **ADD** | `X = Y + Z` |
-| `0010` | **SUB** | `X = Y - Z` |
-| `0011` | **MUL** | `X = Y * Z` |
-| `0100` | **DIV** | `X = Y / Z` _(See hardware note below)_ |
-| `0111` | **IN** | Blocks CPU and waits for user data via PS/2 keyboard |
-| `1000` | **OUT** | Outputs `X` to internal color mappings and LEDs |
-| `1111` | **STOP** | Halts execution, sequentially outputting non-zero operands |
+| Opcode | Instruction | Description |
+|--------|-------------|-------------|
+| `0000` | `MOV`       | Data movement between memory locations / registers. |
+| `0001` | `ADD`       | Arithmetic addition. |
+| `0010` | `SUB`       | Arithmetic subtraction. |
+| `0011` | `MUL`       | Arithmetic multiplication. |
+| `0100` | `DIV`       | Arithmetic division (intentionally left unsupported). |
+| `0111` | `IN`        | Reads input from standard input (PS/2 Keyboard). Blocking until ready. |
+| `1000` | `OUT`       | Writes data to standard output (LEDs/VGA). |
+| `1111` | `STOP`      | Halts execution and optionally outputs up to three values. |
 
-> [!TIP]
-> **A Note on Hardware Division:** The `DIV` instruction is fully supported within the CPU's state machine; however, it utilizes a 16-bit combinational divider in the ALU. While functional, combinational division is extremely resource-intensive for FPGAs. To ensure optimal timing performance ($F_{max}$) and resource efficiency, it is recommended to use bit-shifting or iterative subtraction for division operations where possible.
+### Integrated Peripherals
 
----
+- **VGA Output**: Renders colors based on processed data natively.
+- **PS/2 Keyboard Interface**: Capable of reading hardware keyboard inputs and scan codes for program input.
+- **7-Segment Displays**: Live visualization of the Program Counter (PC) and Stack Pointer (SP).
+- **Hardware Debouncing**: Clean input handling for buttons and switches.
+- **Status LEDs**: `LED[5]` indicates when the processor is ready for input (`IN` instruction), while `LED[4:0]` function as standard output (`OUT`).
 
-## Hardware Modules
-
-### Core Modules
-- `cpu.v` - Main State Machine coordinating execution phases.
-- `memory.v` - Inferrable Block RAM initialized with `mem_init.mif`.
-- `alu.v` - Arithmetic Logic Unit for math operations.
-
-### Peripherals
-- **Keyboard (`ps2.v`, `scan_codes.v`)**: Captures PS/2 clock falling edges, shifts out 11-bit frames, debounces break codes (`F0`), and translates numeric keys into 4-bit CPU data.
-- **VGA (`vga.v`, `color_codes.v`)**: Decodes specific numbers from the CPU into 24-bit RGB values and generates horizontal and vertical sync signals for the monitor.
-- **Displays (`bcd.v`, `ssd.v`)**: Binary-to-BCD conversion routed to onboard 7-segment displays.
-- **Utilities (`red.v`, `debouncer.v`, `clk_div.v`)**: Signal cleanliness and domain derivation.
-
-### Top-Level Wrappers
-- `DE0_CV_TOP.v` - Physical pin mappings for the Cyclone V board.
-- `DE0_TOP.v` - Physical pin mappings for the Cyclone III board.
-- `top.v` - The primary structural integration bridging the CPU with the peripherals and memory.
-
----
-
-## Project Structure
+## Repository Structure
 
 ```text
-├── src/synthesis/
-│   ├── DE0_TOP.v           # Cyclone III Top
-│   ├── DE0_CV_TOP.v        # Cyclone V Top
-│   └── modules/            # Structural & Behavioral RTL
-│       ├── cpu.v
-│       ├── memory.v
-│       ├── alu.v
-│       ├── ps2.v, scan_codes.v
-│       ├── vga.v, color_codes.v
-│       ├── bcd.v, ssd.v
-│       └── ...
-└── mem_init.mif            # Assembly compiled to Memory Initialization format
+Projekat/
+├── src/
+│   ├── simulation/
+│   │   └── cpu_tb.v           # Testbench for verifying CPU behavior
+│   └── synthesis/
+│       ├── modules/
+│       │   ├── alu.v          # Arithmetic Logic Unit
+│       │   ├── cpu.v          # Core CPU State Machine
+│       │   ├── memory.v       # 64x16-bit System Memory
+│       │   ├── vga.v          # VGA Display Controller
+│       │   ├── ps2.v          # PS/2 Keyboard Controller
+│       │   └── ...            # Extracted components (BCD, SSD, Debouncer, etc.)
+│       ├── DE0_CV_TOP.v       # Altera Cyclone V Top-Level Wrapper
+│       └── DE0_TOP.v          # Altera Cyclone III Top-Level Wrapper
+├── tooling/
+│   ├── config/                # Board-specific configurations (.qdf, .sdc, TCL scripts)
+│   ├── xpack/                 # Bundled build utilities for Windows (Make, Busybox)
+│   ├── makefile               # Automated GNU Make script for building/simulating
+│   └── mem_init.mif           # Initialization file containing the compiled program
+├── Postavka.pdf.txt           # Official Project Specification document
+└── README.md                  # This file
 ```
 
 ## Prerequisites
 
-Before running the project, assure you have the following installed and setup:
-- **Intel Quartus Prime** (or Quartus II) installed and added to your system `PATH`.
-- **GNU Make** installed.
-- **Hardware:** DE0 or DE0-CV FPGA development board.
-- *(Optional)* **PS/2 Keyboard** and **VGA Monitor** connected to the board logic.
+To simulate and synthesize this project, you need:
+- **Altera Quartus II (13.1)**: For synthesizing the design onto the Cyclone FPGAs.
+- **ModelSim or QuestaSim**: For running RTL simulations.
+- *(Note: Make and other shell utilities are included within `tooling/xpack/bin`, so no external make installation is required on Windows).*
 
-## How to Run
+## How to Build and Run
 
-1. Connect your DE0 / DE0-CV FPGA board to your PC via USB (USB-Blaster).
-2. Open a terminal in the root of the project repository.
-3. Run the following command to synthesize the project and program the board:
-   ```bash
-   make synth_pgm
-   ```
-4. Once programmed, the CPU will begin execution automatically. If you have connected a PS/2 Keyboard, it will process the `IN` operations by pausing and awaiting key inputs, visualizing states via the onboard Seven-Segment displays and LEDs.
+The project build pipeline is fully automated via GNU Make. 
+Open a terminal (e.g., PowerShell or Command Prompt) and navigate to the project directory.
+
+### Simulation
+
+To compile and run the simulation using ModelSim/QuestaSim:
+```bash
+cd tooling
+./xpack/bin/make.exe simul_all
+```
+Other simulation targets:
+- `simul_run_gui`: Starts the simulation in GUI mode to inspect waveforms.
+- `simul_clean`: Cleans up simulation build artifacts.
+
+### Synthesis
+
+To run the full synthesis pipeline (Analysis & Synthesis, Map, Fit, Assemble, STA) for the FPGA:
+```bash
+cd tooling
+./xpack/bin/make.exe synth_all
+```
+Other synthesis targets:
+- `synth_pgm`: Automatically programs the connected FPGA device with the compiled `.sof` file.
+- `synth_clean`: Removes Quartus build files and logs.
+
+## Customizing the Target Board
+
+By default, the compilation targets the Cyclone III `DE0_TOP`. To change this to Cyclone V `DE0_CV_TOP`, modify the following variables in `tooling/makefile`:
+```makefile
+SYNTH_TOP_LEVEL_MODULE = DE0_CV_TOP
+SYNTH_DEVICE_FAMILY = CycloneV
+SYNTH_DEVICE_PART = 5CEBA4F23C7
+```
+
+## Academic Context
+
+This project was developed as a university assignment for the **Computer VLSI Systems (Računarski VLSI sistemi - 13E114VLSI)** course at the School of Electrical Engineering (ETF).
