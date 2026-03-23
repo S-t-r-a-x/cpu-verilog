@@ -1,4 +1,4 @@
-# VLSI picoComputer
+# VLSI picoComputer: 16-bit Custom CPU
 
 This repository contains the RTL implementation of a custom 16-bit Central Processing Unit (CPU) designed for Cyclone III (DE0) and Cyclone V (DE0-CV) FPGA development boards.
 
