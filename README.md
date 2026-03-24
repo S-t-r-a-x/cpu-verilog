@@ -109,4 +109,4 @@ Other synthesis targets:
 
 ## Academic Context
 
-This project was developed as a university assignment for the **Computer VLSI Systems (Računarski VLSI sistemi - 13E114VLSI)** course at the School of Electrical Engineering (ETF).
+This project was developed as a university assignment for the **Computer VLSI Systems (Računarski VLSI sistemi - 13E114VLSI)** course at the University of Belgrade, School of Electrical Engineering.
